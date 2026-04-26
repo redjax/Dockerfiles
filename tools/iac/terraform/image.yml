@@ -3,8 +3,8 @@ name: terraform-tools
 category: tooling
 description: Terraform CLI image with tflint and tfsec installed.
 publish: true
-context: tooling/terraform
-dockerfile: tooling/terraform/Dockerfile
+context: tools/iac/terraform
+dockerfile: tools/iac/terraform/Dockerfile
 registry_path: ghcr.io/redjax/Dockerfiles/terraform-tools
 upstream:
   registry: docker
