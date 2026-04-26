@@ -3,6 +3,7 @@
 function latest_tag_for_track() {
   local track="$1"
   local tag
+  local matched_tags=()
 
   while IFS= read -r tag; do
     [[ -z "$tag" ]] && continue
@@ -10,28 +11,30 @@ function latest_tag_for_track() {
     case "$track" in
       *-slim)
         if [[ "$tag" == "$track" || "$tag" == "${track}"-* || "$tag" == "${track%}-"*"-slim" ]]; then
-          printf '%s\n' "$tag"
+          matched_tags+=("$tag")
         fi
         ;;
       v[0-9]*.[0-9]*)
         if [[ "$tag" == "$track" || "$tag" == "$track".* ]]; then
-          printf '%s\n' "$tag"
+          matched_tags+=("$tag")
         fi
         ;;
       [0-9]*)
         if [[ "$tag" == "$track" || "$tag" == "$track".* ]]; then
-          if [[ "$tag" != *-slim ]]; then
-            printf '%s\n' "$tag"
+          if [[ "$tag" != *-* ]]; then
+            matched_tags+=("$tag")
           fi
         fi
         ;;
       *)
         if [[ "$tag" == "$track" || "$tag" == "$track"-* ]]; then
-          if [[ "$tag" != *-slim || "$track" == *-slim ]]; then
-            printf '%s\n' "$tag"
+          if [[ "$track" == *-* || "$tag" != *-* ]]; then
+            matched_tags+=("$tag")
           fi
         fi
         ;;
     esac
-  done | sort -V | tail -n1
+  done
+
+  printf '%s\n' "${matched_tags[@]}" | sort -V | tail -n1
 }
