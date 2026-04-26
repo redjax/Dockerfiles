@@ -1,0 +1,17 @@
+---
+name: trivy
+category: security
+description: Trivy container image with pinned version.
+publish: true
+context: tools/security/trivy
+dockerfile: tools/security/trivy/Dockerfile
+registry_path: ghcr.io/redjax/Dockerfiles/trivy
+upstream:
+  registry: docker
+  name: aquasec/trivy
+  track: 0.70
+  version: 0.70.0
+version_args:
+  TRIVY_TAG: 0.70.0
+args:
+  TRIVY_TAG: 0.70.0
