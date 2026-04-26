@@ -8,6 +8,7 @@ registry_path: ghcr.io/redjax/Dockerfiles/alpine-base
 upstream:
   registry: docker
   name: alpine
+  track: 3.22
   version: 3.22.4
 version_args:
   ALPINE_TAG: 3.22.4
