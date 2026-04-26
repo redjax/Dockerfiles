@@ -1,0 +1,10 @@
+## Secrets
+.env
+*.env
+env/*
+*.local.*
+
+## Allow rules
+!*example*.*
+!*.*example*
+
