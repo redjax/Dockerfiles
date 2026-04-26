@@ -22,9 +22,8 @@ function dockerhub_list_tags() {
 
 function dockerhub_latest_version_tag() {
   local name="$1"
-  
+  local track="$2"
+
   dockerhub_list_tags "$name" \
-    | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
-    | sort -V \
-    | tail -n1
+    | latest_tag_for_track "$track"
 }

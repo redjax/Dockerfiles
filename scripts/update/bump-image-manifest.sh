@@ -22,6 +22,7 @@ THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="${THIS_DIR}/lib"
 
 ## Source container registry libs
+source "${LIB_DIR}/tag_utils.sh"
 source "${LIB_DIR}/dockerhub.sh"
 source "${LIB_DIR}/ghcr.sh"
 source "${LIB_DIR}/gitlab.sh"
@@ -32,10 +33,41 @@ function usage() {
 Usage:
   ${0} [OPTIONS]
 
+
 Options:
   --file     Path to image.yml
   --dry-run  Check for updates only; do not modify files
 EOF
+}
+
+## Retrieve the latest tag matching an image.yml manifest's `track:` field
+function get_latest_version() {
+  local registry="$1"
+  local name="$2"
+  local track="$3"
+  local current="$4"
+
+  case "$registry" in
+    docker)
+      dockerhub_latest_version_tag "$name" "$track" "$current"
+      ;;
+    ghcr)
+      ghcr_latest_version_tag "$name" "$track" "$current"
+      ;;
+    gitlab)
+      gitlab_latest_version_tag "$name" "$track" "$current"
+      ;;
+    acr)
+      acr_latest_version_tag "$name" "$track" "$current"
+      ;;
+    manual)
+      echo ""
+      ;;
+    *)
+      echo "[ERROR] Unsupported upstream.registry: $registry" >&2
+      exit 1
+      ;;
+  esac
 }
 
 FILE=""
@@ -71,35 +103,15 @@ done
 ## Populate vars from image.yml
 registry="$(yq e '.upstream.registry' "$FILE")"
 name="$(yq e '.upstream.name' "$FILE")"
+track="$(yq e '.upstream.track' "$FILE")"
 current="$(yq e '.upstream.version' "$FILE")"
 version_arg_keys="$(yq e '.version_args | keys | .[]' "$FILE" 2>/dev/null || true)"
 
 ## Detect registry & latest version
-case "$registry" in
-  docker)
-    latest="$(dockerhub_latest_version_tag "$name")"
-    ;;
-  ghcr)
-    latest="$(ghcr_latest_version_tag "$name")"
-    ;;
-  gitlab)
-    latest="$(gitlab_latest_version_tag "$name")"
-    ;;
-  acr)
-    latest="$(acr_latest_version_tag "$name")"
-    ;;
-  manual)
-    echo "Skipping manual image: $FILE"
-    exit 0
-    ;;
-  *)
-    echo "[ERROR] Unsupported upstream.registry: $registry" >&2
-    exit 1
-    ;;
-esac
+latest="$(get_latest_version "$registry" "$name" "$track" "$current")"
 
 if [[ -z "${latest:-}" ]]; then
-  echo "[ERROR] No tags found for $registry/$name" >&2
+  echo "[ERROR] No tags found for $registry/$name ($track)" >&2
   exit 1
 fi
 
