@@ -1,0 +1,17 @@
+---
+name: debian-base
+category: base
+description: Minimal Debian base image with initial tooling installed.
+publish: true
+context: base/debian
+dockerfile: base/debian/Dockerfile
+registry_path: ghcr.io/redjax/Dockerfiles/debian-base
+upstream:
+  registry: docker
+  name: debian
+  track: 12
+  version: 12.12
+version_args:
+  DEBIAN_TAG: 12.12
+args:
+  DEBIAN_TAG: 12.12
