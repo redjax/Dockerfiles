@@ -1,0 +1,17 @@
+---
+name: gitleaks
+category: security
+description: Gitleaks container image with pinned version.
+publish: true
+context: tools/security/gitleaks
+dockerfile: tools/security/gitleaks/Dockerfile
+registry_path: ghcr.io/redjax/Dockerfiles/gitleaks
+upstream:
+  registry: ghcr
+  name: gitleaks/gitleaks
+  track: v8.30
+  version: v8.30.1
+version_args:
+  GITLEAKS_TAG: v8.30.1
+args:
+  GITLEAKS_TAG: v8.30.1

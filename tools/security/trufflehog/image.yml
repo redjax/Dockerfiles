@@ -1,0 +1,17 @@
+---
+name: trufflehog
+category: security
+description: TruffleHog container image with pinned version.
+publish: true
+context: tools/security/trufflehog
+dockerfile: tools/security/trufflehog/Dockerfile
+registry_path: ghcr.io/redjax/Dockerfiles/trufflehog
+upstream:
+  registry: docker
+  name: trufflesecurity/trufflehog
+  track: 3.95
+  version: 3.95.2
+version_args:
+  TRUFFLEHOG_TAG: 3.95.2
+args:
+  TRUFFLEHOG_TAG: 3.95.2
