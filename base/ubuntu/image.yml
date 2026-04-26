@@ -1,0 +1,17 @@
+---
+name: ubuntu-base
+category: base
+description: Minimal Ubuntu base image with initial tooling installed.
+publish: true
+context: base/ubuntu
+dockerfile: base/ubuntu/Dockerfile
+registry_path: ghcr.io/redjax/Dockerfiles/ubuntu-base
+upstream:
+  registry: docker
+  name: ubuntu
+  track: 26.04
+  version: 26.04
+version_args:
+  UBUNTU_TAG: 26.04
+args:
+  UBUNTU_TAG: 26.04
