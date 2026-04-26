@@ -9,6 +9,8 @@ upstream:
   registry: docker
   name: alpine
   version: 3.22.4
+version_args:
+  ALPINE_TAG: 3.22.4
 args:
   ALPINE_TAG: 3.22.4
 description: Minimal Alpine base image with initial tooling installed.
