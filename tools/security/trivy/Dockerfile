@@ -1,4 +1,4 @@
-ARG TRIVY_TAG=latest
+ARG TRIVY_TAG=0.70.0
 
 FROM aquasec/trivy:${TRIVY_TAG}
 
