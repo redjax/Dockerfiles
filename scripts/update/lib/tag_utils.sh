@@ -13,6 +13,11 @@ function latest_tag_for_track() {
           printf '%s\n' "$tag"
         fi
         ;;
+      v[0-9]*.[0-9]*)
+        if [[ "$tag" == "$track" || "$tag" == "$track".* ]]; then
+          printf '%s\n' "$tag"
+        fi
+        ;;
       [0-9]*)
         if [[ "$tag" == "$track" || "$tag" == "$track".* ]]; then
           if [[ "$tag" != *-slim ]]; then
