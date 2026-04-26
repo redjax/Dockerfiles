@@ -6,7 +6,7 @@
 
 ```shell
 docker build \
-    --tag terraform:3.22.4 \
+    --tag terraform:1.11.0 \
     --build-arg TERRAFORM_TAG=1.11.0 \
     --build-arg TFLINT_VERSION=0.62.0 \
     --build-arg TFSEC_VERSION=1.28.14 \
