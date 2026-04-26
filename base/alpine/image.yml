@@ -1,0 +1,14 @@
+---
+name: alpine-base
+category: base
+publish: true
+context: base/alpine
+dockerfile: base/alpine/Dockerfile
+registry_path: ghcr.io/redjax/Dockerfiles/alpine-base
+upstream:
+  registry: docker
+  name: alpine
+  version: 3.22.4
+args:
+  ALPINE_TAG: 3.22.4
+description: Minimal Alpine base image with initial tooling installed.
