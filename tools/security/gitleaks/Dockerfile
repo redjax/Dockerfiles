@@ -1,6 +1,6 @@
-ARG GITLEAKS_TAG=latest
+ARG GITLEAKS_TAG=v8.30.1
 
-FROM zricethezav/gitleaks:${GITLEAKS_TAG}
+FROM ghcr.io/gitleaks/gitleaks:${GITLEAKS_TAG}
 
 WORKDIR /repo
 
