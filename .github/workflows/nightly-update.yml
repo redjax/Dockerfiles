@@ -1,0 +1,29 @@
+---
+#############################################
+# Scheduled nightly update check.           #
+#                                           #
+# Finds image.yml manifests and checks for  #
+# updates to upstream images. Rebuilds and  #
+# publishes any changed containers.         #
+#############################################
+
+name: Nightly image update
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  update:
+    uses: ./.github/workflows/update-images.yml
+    secrets: inherit
+
+  build_publish:
+    needs: update
+    uses: ./.github/workflows/build-publish.yml
+    secrets: inherit

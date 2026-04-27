@@ -22,8 +22,14 @@ on:
         default: false
         type: boolean
 
-  schedule:
-    - cron: "0 3 * * *"
+  workflow_call:
+    inputs:
+      image:
+        required: false
+        type: string
+      dry_run:
+        required: false
+        type: boolean
 
 concurrency:
   group: update-images
