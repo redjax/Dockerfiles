@@ -50,7 +50,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Find image manifests
-        id: manifests
         shell: bash
         run: |
           set -euo pipefail
@@ -64,52 +63,33 @@ jobs:
           fi
 
           count="$(wc -l < manifests.txt | tr -d ' ')"
-          echo "count=$count" >> "$GITHUB_OUTPUT"
-
           if [[ "$count" -eq 0 ]]; then
             echo "No image manifests found."
           fi
 
       - name: Update manifests and Dockerfiles
-        id: update
         shell: bash
         run: |
           set -euo pipefail
 
-          DRY_RUN=""
-          if [[ "${{ inputs.dry_run || false }}" == "true" ]]; then
-            DRY_RUN="--dry-run"
+          DRY_RUN="false"
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN="true"
           fi
-
-          manifest_changed=false
-          dockerfile_changed=false
 
           while IFS= read -r manifest; do
             [[ -n "$manifest" ]] || continue
 
             echo "Processing $manifest"
 
-            before="$(git status --porcelain=v1)"
-
-            ./scripts/update/bump-image-manifest.sh --file "$manifest" $DRY_RUN
-
-            after_manifest="$(git status --porcelain=v1)"
-            if [[ "$after_manifest" != "$before" ]]; then
-              manifest_changed=true
-            fi
-
-            before="$(git status --porcelain=v1)"
-
-            ./scripts/update/bump-dockerfile-arg.sh --file "$manifest" $DRY_RUN
-
-            after_dockerfile="$(git status --porcelain=v1)"
-            if [[ "$after_dockerfile" != "$before" ]]; then
-              dockerfile_changed=true
+            if [[ "$DRY_RUN" == "true" ]]; then
+              ./scripts/update/bump-image-manifest.sh --file "$manifest" --dry-run
+              ./scripts/update/bump-dockerfile-arg.sh --file "$manifest" --dry-run
+            else
+              ./scripts/update/bump-image-manifest.sh --file "$manifest"
+              ./scripts/update/bump-dockerfile-arg.sh --file "$manifest"
             fi
           done < manifests.txt
-
-          echo "manifest_changed=$manifest_changed" >> "$GITHUB_OUTPUT"
-          echo "dockerfile_changed=$dockerfile_changed" >> "$GITHUB_OUTPUT"
 
       - name: Detect changes
         id: changes
