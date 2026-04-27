@@ -10,28 +10,11 @@ set -euo pipefail
 # release.                                     #
 ################################################
 
-## Ensure required packages are installed
-for cmd in curl yq jq; do
-  if ! command -v "$cmd" >/dev/null 2>&1; then
-    echo "[ERROR] $cmd is not installed" >&2
-    exit 1
-  fi
-done
-
-THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIB_DIR="${THIS_DIR}/lib"
-
-## Source container registry libs
-source "${LIB_DIR}/tag_utils.sh"
-source "${LIB_DIR}/dockerhub.sh"
-source "${LIB_DIR}/ghcr.sh"
-source "${LIB_DIR}/gitlab.sh"
-source "${LIB_DIR}/acr.sh"
-
 function usage() {
   cat <<EOF
 Usage:
   ${0} [OPTIONS]
+
 
 
 Options:
@@ -46,6 +29,7 @@ function get_latest_version() {
   local name="$2"
   local track="$3"
   local current="$4"
+
 
   case "$registry" in
     docker)
@@ -69,6 +53,24 @@ function get_latest_version() {
       ;;
   esac
 }
+
+## Ensure required packages are installed
+for cmd in curl yq jq; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "[ERROR] $cmd is not installed" >&2
+    exit 1
+  fi
+done
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="${THIS_DIR}/lib"
+
+## Source container registry libs
+source "${LIB_DIR}/tag_utils.sh"
+source "${LIB_DIR}/dockerhub.sh"
+source "${LIB_DIR}/ghcr.sh"
+source "${LIB_DIR}/gitlab.sh"
+source "${LIB_DIR}/acr.sh"
 
 FILE=""
 DRY_RUN=false
@@ -107,6 +109,11 @@ track="$(yq e '.upstream.track' "$FILE")"
 current="$(yq e '.upstream.version' "$FILE")"
 version_arg_keys="$(yq e '.version_args | keys | .[]' "$FILE" 2>/dev/null || true)"
 
+[[ -n "$registry" && "$registry" != "null" ]] || { echo "[ERROR] .upstream.registry missing in $FILE" >&2; exit 1; }
+[[ -n "$name" && "$name" != "null" ]] || { echo "[ERROR] .upstream.name missing in $FILE" >&2; exit 1; }
+[[ -n "$track" && "$track" != "null" ]] || { echo "[ERROR] .upstream.track missing in $FILE" >&2; exit 1; }
+[[ -n "$current" && "$current" != "null" ]] || { echo "[ERROR] .upstream.version missing in $FILE" >&2; exit 1; }
+
 ## Detect registry & latest version
 latest="$(get_latest_version "$registry" "$name" "$track" "$current")"
 
@@ -136,7 +143,6 @@ update_expr=".upstream.version = \"$latest\""
 while IFS= read -r key; do
   [[ -n "$key" ]] || continue
   update_expr+=" | .version_args.${key} = \"$latest\""
-  update_expr+=" | .args.${key} = \"$latest\""
 done <<< "$version_arg_keys"
 
 ## Write updates to temp file
