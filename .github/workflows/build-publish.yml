@@ -1,4 +1,11 @@
 ---
+#############################################
+# Scan repository for publishable images    #
+# and build/push changed container images.  #
+#                                           #
+# Builds only images with `publish: true.`  #
+#############################################
+
 name: Build and publish images
 
 on:
@@ -59,40 +66,25 @@ jobs:
         run: |
           set -euo pipefail
 
-          : > build_list.txt
+          build_list_file="$RUNNER_TEMP/build_list.txt"
+          : > "$build_list_file"
 
           if [[ -n "${{ inputs.image || '' }}" ]]; then
-            echo "${{ inputs.image }}" >> build_list.txt
+            echo "${{ inputs.image }}" >> "$build_list_file"
           else
-            if [[ -n "${{ github.event.before }}" ]]; then
-              changed="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")"
-            else
-              changed="$(git diff --name-only HEAD~1 HEAD)"
-            fi
-
-            while IFS= read -r path; do
-              [[ -n "$path" ]] || continue
-
-              case "$path" in
-                */image.yml)
-                  dirname "$path"
-                  ;;
-                */Dockerfile)
-                  dirname "$path"
-                  ;;
-                *)
-                  dir="$(dirname "$path")"
-                  if [[ -f "$dir/image.yml" ]]; then
-                    echo "$dir"
-                  fi
-                  ;;
-              esac
-            done <<< "$changed" | sort -u > build_list.txt
+            find . -name image.yml -type f | sort | while IFS= read -r manifest; do
+              [[ -n "$manifest" ]] || continue
+              publish="$(yq e '.publish' "$manifest")"
+              [[ "$publish" == "true" ]] || continue
+              dirname "$manifest"
+            done | sort -u > "$build_list_file"
           fi
 
-          if [[ ! -s build_list.txt ]]; then
-            echo "No changed images found."
+          if [[ ! -s "$build_list_file" ]]; then
+            echo "No publishable images found."
           fi
+
+          cat "$build_list_file" > build_list.txt
 
       - name: Build and publish images
         shell: bash
