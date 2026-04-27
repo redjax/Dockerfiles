@@ -1,0 +1,147 @@
+---
+name: Build and publish images
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Optional path to a single image directory, e.g. base/alpine"
+        required: false
+        type: string
+      dry_run:
+        description: "Build without pushing"
+        required: false
+        default: false
+        type: boolean
+  workflow_call:
+    inputs:
+      image:
+        description: "Optional path to a single image directory, e.g. base/alpine"
+        required: false
+        type: string
+      dry_run:
+        description: "Build without pushing"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install yq
+        uses: mikefarah/yq@v4.53.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        if: inputs.dry_run != true
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine images to build
+        id: build_list
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          : > build_list.txt
+
+          if [[ -n "${{ inputs.image || '' }}" ]]; then
+            echo "${{ inputs.image }}" >> build_list.txt
+          else
+            if [[ -n "${{ github.event.before }}" ]]; then
+              changed="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")"
+            else
+              changed="$(git diff --name-only HEAD~1 HEAD)"
+            fi
+
+            while IFS= read -r path; do
+              [[ -n "$path" ]] || continue
+
+              case "$path" in
+                */image.yml)
+                  dirname "$path"
+                  ;;
+                */Dockerfile)
+                  dirname "$path"
+                  ;;
+                *)
+                  dir="$(dirname "$path")"
+                  if [[ -f "$dir/image.yml" ]]; then
+                    echo "$dir"
+                  fi
+                  ;;
+              esac
+            done <<< "$changed" | sort -u > build_list.txt
+          fi
+
+          if [[ ! -s build_list.txt ]]; then
+            echo "No changed images found."
+          fi
+
+      - name: Build and publish images
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DRY_RUN="false"
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN="true"
+          fi
+
+          while IFS= read -r image_dir; do
+            [[ -n "$image_dir" ]] || continue
+
+            manifest="$image_dir/image.yml"
+            [[ -f "$manifest" ]] || continue
+
+            publish="$(yq e '.publish' "$manifest")"
+            [[ "$publish" == "true" ]] || continue
+
+            context="$(yq e '.context' "$manifest")"
+            dockerfile="$(yq e '.dockerfile' "$manifest")"
+            name="$(yq e '.name' "$manifest")"
+            registry_path="$(yq e '.registry_path' "$manifest")"
+            tag="$(yq e '.upstream.version' "$manifest")"
+
+            build_args=()
+            while IFS= read -r key; do
+              [[ -n "$key" ]] || continue
+              value="$(yq e ".args.${key}" "$manifest")"
+              [[ -n "$value" && "$value" != "null" ]] || continue
+              build_args+=(--build-arg "${key}=${value}")
+            done < <(yq e '.args | keys | .[]' "$manifest" 2>/dev/null || true)
+
+            echo "Building $name from $manifest"
+
+            if [[ "$DRY_RUN" == "true" ]]; then
+              echo "./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --tag $tag ${build_args[*]}"
+              echo "docker tag ${name}:${tag} ${registry_path}:${tag}"
+              echo "docker push ${registry_path}:${tag}"
+            else
+              ./scripts/build/build-image.sh \
+                --context "$context" \
+                --dockerfile "$dockerfile" \
+                --name "$name" \
+                --tag "$tag" \
+                "${build_args[@]}"
+
+              docker tag "${name}:${tag}" "${registry_path}:${tag}"
+              docker push "${registry_path}:${tag}"
+            fi
+          done < build_list.txt
