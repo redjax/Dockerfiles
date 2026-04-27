@@ -62,90 +62,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Determine images to build
-        id: build_list
         shell: bash
         run: |
           set -euo pipefail
-
-          build_list_file="$RUNNER_TEMP/build_list.txt"
-          : > "$build_list_file"
-
-          if [[ -n "${{ inputs.image || '' }}" ]]; then
-            echo "${{ inputs.image }}" >> "$build_list_file"
-          else
-            find . -name image.yml -type f | sort | while IFS= read -r manifest; do
-              [[ -n "$manifest" ]] || continue
-              publish="$(yq e '.publish' "$manifest")"
-              [[ "$publish" == "true" ]] || continue
-              dirname "$manifest"
-            done | sort -u > "$build_list_file"
-          fi
-
-          if [[ ! -s "$build_list_file" ]]; then
-            echo "No publishable images found."
-          fi
-
-          cat "$build_list_file" > build_list.txt
+          chmod +x ./scripts/build/determine-images-to-build.sh
+          IMAGE_DIR="${{ inputs.image || '' }}" ./scripts/build/determine-images-to-build.sh build_list.txt
 
       - name: Build and publish images
         shell: bash
         run: |
           set -euo pipefail
-
-          DRY_RUN="false"
-          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-            DRY_RUN="true"
-          fi
-
-          short_sha="${GITHUB_SHA::7}"
-
-          while IFS= read -r image_dir; do
-            [[ -n "$image_dir" ]] || continue
-
-            manifest="$image_dir/image.yml"
-            [[ -f "$manifest" ]] || continue
-
-            publish="$(yq e '.publish' "$manifest")"
-            [[ "$publish" == "true" ]] || continue
-
-            context="$(yq e '.context' "$manifest")"
-            dockerfile="$(yq e '.dockerfile' "$manifest")"
-            name="$(yq e '.name' "$manifest")"
-            registry_path="$(yq e '.registry_path' "$manifest")"
-            tag="$(yq e '.upstream.version' "$manifest")"
-
-            build_args=()
-            while IFS= read -r key; do
-              [[ -n "$key" ]] || continue
-              value="$(yq e ".args.${key}" "$manifest")"
-              [[ -n "$value" && "$value" != "null" ]] || continue
-              build_args+=(--build-arg "${key}=${value}")
-            done < <(yq e '.args | keys | .[]' "$manifest" 2>/dev/null || true)
-
-            echo "Building $name from $manifest"
-
-            if [[ "$DRY_RUN" == "true" ]]; then
-              echo "./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --tag $tag ${build_args[*]}"
-              echo "docker tag ${name}:${tag} ${registry_path}:${tag}"
-              echo "docker tag ${name}:${tag} ${registry_path}:latest"
-              echo "docker tag ${name}:${tag} ${registry_path}:${short_sha}"
-              echo "docker push ${registry_path}:${tag}"
-              echo "docker push ${registry_path}:latest"
-              echo "docker push ${registry_path}:${short_sha}"
-            else
-              ./scripts/build/build-image.sh \
-                --context "$context" \
-                --dockerfile "$dockerfile" \
-                --name "$name" \
-                --tag "$tag" \
-                "${build_args[@]}"
-
-              docker tag "${name}:${tag}" "${registry_path}:${tag}"
-              docker tag "${name}:${tag}" "${registry_path}:latest"
-              docker tag "${name}:${tag}" "${registry_path}:${short_sha}"
-
-              docker push "${registry_path}:${tag}"
-              docker push "${registry_path}:latest"
-              docker push "${registry_path}:${short_sha}"
-            fi
-          done < build_list.txt
+          chmod +x ./scripts/build/build-and-publish-images.sh
+          DRY_RUN="${{ inputs.dry_run }}" ./scripts/build/build-and-publish-images.sh build_list.txt
