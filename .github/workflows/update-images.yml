@@ -22,9 +22,6 @@ on:
         default: false
         type: boolean
 
-  schedule:
-    - cron: "0 3 * * *"
-
 concurrency:
   group: update-images
   cancel-in-progress: true
