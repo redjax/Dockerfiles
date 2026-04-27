@@ -37,12 +37,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Install yq
-        uses: mikefarah/yq@v4.44.3
+        uses: mikefarah/yq@v4.53.2
 
       - name: Configure git
         run: |
