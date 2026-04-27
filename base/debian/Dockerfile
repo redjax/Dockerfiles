@@ -1,5 +1,5 @@
 ## https://hub.docker.com/_/debian
-ARG DEBIAN_TAG=12
+ARG DEBIAN_TAG=12.13
 
 FROM debian:${DEBIAN_TAG}
 

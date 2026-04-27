@@ -10,8 +10,8 @@ upstream:
   registry: docker
   name: debian
   track: 12
-  version: 12.12
+  version: "12.13"
 version_args:
-  DEBIAN_TAG: 12.12
+  DEBIAN_TAG: "12.13"
 args:
   DEBIAN_TAG: 12.12

@@ -1,0 +1,7 @@
+./base/alpine/image.yml
+./base/debian/image.yml
+./base/ubuntu/image.yml
+./tools/iac/terraform/image.yml
+./tools/security/gitleaks/image.yml
+./tools/security/trivy/image.yml
+./tools/security/trufflehog/image.yml

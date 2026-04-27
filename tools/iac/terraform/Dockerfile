@@ -1,5 +1,5 @@
 ## https://hub.docker.com/r/hashicorp/terraform
-ARG TERRAFORM_TAG=1.11.0
+ARG TERRAFORM_TAG=1.14.9
 ## https://github.com/terraform-linters/tflint/releases
 ARG TFLINT_VERSION=0.62.0
 ## https://github.com/aquasecurity/tfsec/releases
