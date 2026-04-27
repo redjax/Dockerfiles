@@ -1,0 +1,117 @@
+---
+############################################
+# Scan repository for image.yml manifests  #
+# and check for updated upstream versions. #
+#                                          #
+# Path the image.yml & Dockerfile on new   #
+# upstream versions.                       #
+############################################
+
+name: Update image manifests
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Optional path to a single image directory, e.g. base/alpine"
+        required: false
+        type: string
+      dry_run:
+        description: "Preview changes without committing"
+        required: false
+        default: false
+        type: boolean
+  # schedule:
+  #   - cron: "0 3 * * *"
+
+concurrency:
+  group: update-images
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install yq
+        uses: mikefarah/yq@v4.44.3
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Find image manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          : > manifests.txt
+
+          if [[ -n "${{ inputs.image || '' }}" ]]; then
+            find "./${{ inputs.image }}" -name image.yml -type f | sort > manifests.txt
+          else
+            find . -name image.yml -type f | sort > manifests.txt
+          fi
+
+          count="$(wc -l < manifests.txt | tr -d ' ')"
+          if [[ "$count" -eq 0 ]]; then
+            echo "No image manifests found."
+          fi
+
+      - name: Update manifests and Dockerfiles
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DRY_RUN="false"
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            DRY_RUN="true"
+          fi
+
+          while IFS= read -r manifest; do
+            [[ -n "$manifest" ]] || continue
+
+            echo "Processing $manifest"
+
+            if [[ "$DRY_RUN" == "true" ]]; then
+              ./scripts/update/bump-image-manifest.sh --file "$manifest" --dry-run
+              ./scripts/update/bump-dockerfile-arg.sh --file "$manifest" --dry-run
+            else
+              ./scripts/update/bump-image-manifest.sh --file "$manifest"
+              ./scripts/update/bump-dockerfile-arg.sh --file "$manifest"
+            fi
+          done < manifests.txt
+
+      - name: Detect changes
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat
+          fi
+
+      - name: Show diff
+        if: steps.changes.outputs.changed == 'true' && inputs.dry_run == true
+        run: |
+          git diff --unified=3
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true' && inputs.dry_run != true
+        run: |
+          git add -A
+          git commit -m "chore: update image manifests and dockerfile args"
+          git push
