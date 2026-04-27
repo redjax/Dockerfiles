@@ -1,10 +1,10 @@
 ---
-#############################################
-# Scan repository for publishable images    #
-# and build/push changed container images.  #
-#                                           #
-# Builds only images with `publish: true.`  #
-#############################################
+############################################
+# Scan repository for publishable images   #
+# and build/push changed container images. #
+#                                          #
+# Builds only images with publish: true.   #
+############################################
 
 name: Build and publish images
 
@@ -20,6 +20,7 @@ on:
         required: false
         default: false
         type: boolean
+
   workflow_call:
     inputs:
       image:
@@ -96,6 +97,8 @@ jobs:
             DRY_RUN="true"
           fi
 
+          short_sha="${GITHUB_SHA::7}"
+
           while IFS= read -r image_dir; do
             [[ -n "$image_dir" ]] || continue
 
@@ -124,7 +127,11 @@ jobs:
             if [[ "$DRY_RUN" == "true" ]]; then
               echo "./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --tag $tag ${build_args[*]}"
               echo "docker tag ${name}:${tag} ${registry_path}:${tag}"
+              echo "docker tag ${name}:${tag} ${registry_path}:latest"
+              echo "docker tag ${name}:${tag} ${registry_path}:${short_sha}"
               echo "docker push ${registry_path}:${tag}"
+              echo "docker push ${registry_path}:latest"
+              echo "docker push ${registry_path}:${short_sha}"
             else
               ./scripts/build/build-image.sh \
                 --context "$context" \
@@ -134,6 +141,11 @@ jobs:
                 "${build_args[@]}"
 
               docker tag "${name}:${tag}" "${registry_path}:${tag}"
+              docker tag "${name}:${tag}" "${registry_path}:latest"
+              docker tag "${name}:${tag}" "${registry_path}:${short_sha}"
+
               docker push "${registry_path}:${tag}"
+              docker push "${registry_path}:latest"
+              docker push "${registry_path}:${short_sha}"
             fi
           done < build_list.txt
