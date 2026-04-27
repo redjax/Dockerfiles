@@ -5,7 +5,7 @@ description: Trivy container image with pinned version.
 publish: true
 context: tools/security/trivy
 dockerfile: tools/security/trivy/Dockerfile
-registry_path: ghcr.io/redjax/Dockerfiles/trivy
+registry_path: ghcr.io/redjax/dockerfiles/trivy
 upstream:
   registry: docker
   name: aquasec/trivy

@@ -32,7 +32,7 @@ description: A short description for the container.
 publish: true
 context: base/alpine
 dockerfile: base/alpine/Dockerfile
-registry_path: ghcr.io/redjax/Dockerfiles/alpine-base
+registry_path: ghcr.io/redjax/dockerfiles/alpine-base
 upstream:
   registry: docker
   name: alpine
@@ -138,7 +138,7 @@ description: Alpine-based utility image
 publish: true
 context: base/alpine
 dockerfile: base/alpine/Dockerfile
-registry_path: ghcr.io/redjax/Dockerfiles/alpine-base
+registry_path: ghcr.io/redjax/dockerfiles/alpine-base
 upstream:
   registry: docker
   name: alpine

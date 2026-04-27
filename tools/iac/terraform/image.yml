@@ -5,7 +5,7 @@ description: Terraform CLI image with tflint and tfsec installed.
 publish: true
 context: tools/iac/terraform
 dockerfile: tools/iac/terraform/Dockerfile
-registry_path: ghcr.io/redjax/Dockerfiles/terraform-tools
+registry_path: ghcr.io/redjax/dockerfiles/terraform-tools
 upstream:
   registry: docker
   name: hashicorp/terraform
