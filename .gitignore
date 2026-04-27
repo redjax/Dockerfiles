@@ -8,3 +8,5 @@ env/*
 !*example*.*
 !*.*example*
 
+## CI/CD
+manifests.txt
