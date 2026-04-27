@@ -21,8 +21,9 @@ on:
         required: false
         default: false
         type: boolean
-  # schedule:
-  #   - cron: "0 3 * * *"
+
+  schedule:
+    - cron: "0 3 * * *"
 
 concurrency:
   group: update-images
