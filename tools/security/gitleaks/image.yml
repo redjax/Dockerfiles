@@ -5,7 +5,7 @@ description: Gitleaks container image with pinned version.
 publish: true
 context: tools/security/gitleaks
 dockerfile: tools/security/gitleaks/Dockerfile
-registry_path: ghcr.io/redjax/Dockerfiles/gitleaks
+registry_path: ghcr.io/redjax/dockerfiles/gitleaks
 upstream:
   registry: ghcr
   name: gitleaks/gitleaks

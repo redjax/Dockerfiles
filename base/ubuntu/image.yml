@@ -5,7 +5,7 @@ description: Minimal Ubuntu base image with initial tooling installed.
 publish: true
 context: base/ubuntu
 dockerfile: base/ubuntu/Dockerfile
-registry_path: ghcr.io/redjax/Dockerfiles/ubuntu-base
+registry_path: ghcr.io/redjax/dockerfiles/ubuntu-base
 upstream:
   registry: docker
   name: ubuntu
