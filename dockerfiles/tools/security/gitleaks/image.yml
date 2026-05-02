@@ -3,8 +3,8 @@ name: gitleaks
 category: security
 description: Gitleaks container image with pinned version.
 publish: true
-context: tools/security/gitleaks
-dockerfile: tools/security/gitleaks/Dockerfile
+context: dockerfiles/tools/security/gitleaks
+dockerfile: dockerfiles/tools/security/gitleaks/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/gitleaks
 upstream:
   registry: ghcr

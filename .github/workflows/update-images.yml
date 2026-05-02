@@ -19,7 +19,8 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: "Optional path to a single image directory, e.g. base/alpine"
+        description: "Optional path to a single image directory, e.g.
+          dockerfiles/base/alpine"
         required: false
         type: string
       dry_run:
@@ -53,6 +54,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref }}
 
       - name: Install yq
         uses: mikefarah/yq@v4.53.2
@@ -92,7 +94,12 @@ jobs:
 
             echo "Processing $manifest"
 
-            output="$(./scripts/update/bump-image-manifest.sh --file "$manifest" ${DRY_RUN:+--dry-run})"
+            if [[ "${DRY_RUN}" == "true" ]]; then
+              output="$(./scripts/update/bump-image-manifest.sh --file "$manifest" --dry-run)"
+            else
+              output="$(./scripts/update/bump-image-manifest.sh --file "$manifest")"
+            fi
+            
             echo "$output"
 
           done < manifests.txt

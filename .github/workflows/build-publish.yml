@@ -19,7 +19,8 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: "Optional path to a single image directory, e.g. base/alpine"
+        description: "Optional path to a single image directory, e.g.
+          dockerfiles/base/alpine"
         required: false
         type: string
       dry_run:
@@ -36,7 +37,8 @@ on:
   workflow_call:
     inputs:
       image:
-        description: "Optional path to a single image directory, e.g. base/alpine"
+        description: "Optional path to a single image directory, e.g.
+          dockerfiles/base/alpine"
         required: false
         type: string
       dry_run:
@@ -107,7 +109,7 @@ jobs:
 
           chmod +x ./scripts/build/build-and-publish-images.sh
 
-          DRY_RUN="${{ inputs.dry_run }}"
-          FORCE="${{ inputs.force }}"
+          DRY_RUN="${{ inputs.dry_run || false }}"
+          FORCE="${{ inputs.force || false }}"
 
           ./scripts/build/build-and-publish-images.sh build_list.txt

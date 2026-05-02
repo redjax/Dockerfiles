@@ -3,8 +3,8 @@ name: ubuntu-base
 category: base
 description: Minimal Ubuntu base image with initial tooling installed.
 publish: true
-context: base/ubuntu
-dockerfile: base/ubuntu/Dockerfile
+context: dockerfiles/base/ubuntu
+dockerfile: dockerfiles/base/ubuntu/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/ubuntu-base
 upstream:
   registry: docker

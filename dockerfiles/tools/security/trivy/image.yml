@@ -3,8 +3,8 @@ name: trivy
 category: security
 description: Trivy container image with pinned version.
 publish: true
-context: tools/security/trivy
-dockerfile: tools/security/trivy/Dockerfile
+context: dockerfiles/tools/security/trivy
+dockerfile: dockerfiles/tools/security/trivy/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/trivy
 upstream:
   registry: docker
