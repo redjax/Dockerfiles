@@ -68,6 +68,7 @@ done
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="${THIS_DIR}/lib"
 
+source "${LIB_DIR}/components.sh"
 source "${LIB_DIR}/tag_utils.sh"
 source "${LIB_DIR}/dockerhub.sh"
 source "${LIB_DIR}/ghcr.sh"
@@ -146,6 +147,41 @@ while IFS= read -r key; do
   fi
 done < <(yq e '.version_args | keys | .[]' "$FILE" 2>/dev/null || true)
 
+## Process components
+while IFS= read -r component; do
+  [[ -n "$component" ]] || continue
+
+  type="$(yq e ".components.${component}.type" "$FILE")"
+  track="$(yq e ".components.${component}.track" "$FILE")"
+  current_comp="$(yq e ".components.${component}.version" "$FILE")"
+
+  [[ -z "$type" || "$type" == "null" ]] && continue
+
+  identifier=""
+
+  case "$type" in
+    dockerhub)
+      identifier="$(yq e ".components.${component}.name" "$FILE")"
+      ;;
+    github_release)
+      identifier="$(yq e ".components.${component}.repo" "$FILE")"
+      ;;
+  esac
+
+  latest_comp="$(resolve_component_version "$type" "$identifier" "$track")"
+
+  if [[ -z "$latest_comp" || "$latest_comp" == "null" ]]; then
+    continue
+  fi
+
+  if [[ "$latest_comp" != "$current_comp" ]]; then
+    echo "Updating component ${component}: ${current_comp} -> ${latest_comp}"
+    needs_update=true
+    reason="${reason:+$reason, }component ${component} updated"
+  fi
+
+done < <(yq e '.components | keys | .[]' "$FILE" 2>/dev/null || true)
+
 ## Exit early if no update needed
 if [[ "$needs_update" == false ]]; then
   echo "Up to date: $name $current"
@@ -172,8 +208,38 @@ while IFS= read -r key; do
 
   version_val="$(yq e ".version_args.${key}" "$FILE")"
 
-  update_expr+=" | .version_args.${key} = \"$version_val\" | .args.${key} = \"$version_val\""
+  update_expr+=" | .version_args.${key} = \"${version_val}\" | .args.${key} = \"${version_val}\""
 done < <(yq e '.version_args | keys | .[]' "$FILE" 2>/dev/null || true)
+
+## Apply component updates + sync args if mapped
+while IFS= read -r component; do
+  [[ -n "$component" ]] || continue
+
+  type="$(yq e ".components.${component}.type" "$FILE")"
+  track="$(yq e ".components.${component}.track" "$FILE")"
+
+  identifier=""
+  case "$type" in
+    dockerhub)
+      identifier="$(yq e ".components.${component}.name" "$FILE")"
+      ;;
+    github_release)
+      identifier="$(yq e ".components.${component}.repo" "$FILE")"
+      ;;
+  esac
+
+  latest_comp="$(resolve_component_version "$type" "$identifier" "$track")"
+
+  if [[ -n "$latest_comp" && "$latest_comp" != "null" ]]; then
+    update_expr+=" | .components.${component}.version = \"${latest_comp}\""
+
+    arg="$(yq e ".components.${component}.arg" "$FILE")"
+    if [[ -n "$arg" && "$arg" != "null" ]]; then
+      update_expr+=" | .version_args.${arg} = \"${latest_comp}\" | .args.${arg} = \"${latest_comp}\""
+    fi
+  fi
+
+done < <(yq e '.components | keys | .[]' "$FILE" 2>/dev/null || true)
 
 ## Apply update
 yq e "$update_expr" "$FILE" > "$tmpfile"
