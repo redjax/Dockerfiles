@@ -17,7 +17,7 @@ on:
         required: false
         type: string
       dry_run:
-        description: "Preview changes without committing"
+        description: "Dry run - preview changes without committing"
         required: false
         default: false
         type: boolean
