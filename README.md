@@ -1,5 +1,17 @@
 # Dockerfiles
 
+<!-- Repo image -->
+<p align="center">
+  <a href="https://github.com/redjax/Dockerfiles">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset=".assets/img/docker-header.png">
+      <img src=".assets/img/docker-header.png" height="300">
+    </picture>
+  </a>
+</p>
+
+---
+
 Docker container images for different purposes. Some are runtime containers, others are meant to be run in CI/CD pipelines.
 
 See the [usage docs](./docs/USAGE.md) for more information.
