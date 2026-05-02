@@ -6,7 +6,6 @@ publish: true
 context: tools/iac/terraform
 dockerfile: tools/iac/terraform/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/terraform-tools
-
 components:
   tflint:
     type: github_release
@@ -14,33 +13,28 @@ components:
     track: v0.62
     version: v0.62.0
     arg: TFLINT_VERSION
-
   tfsec:
     type: github_release
     repo: aquasecurity/tfsec
     track: v1.28
     version: v1.28.14
     arg: TFSEC_VERSION
-
   terraform:
     type: dockerhub
     name: hashicorp/terraform
     track: 1.14
     version: 1.14.9
     arg: TERRAFORM_TAG
-
 upstream:
   registry: docker
   name: hashicorp/terraform
   track: 1.14
   version: 1.14.9
-
 version_args:
   TERRAFORM_TAG: 1.14.9
-  TFLINT_VERSION: 0.62.0
-  TFSEC_VERSION: 1.28.14
-
+  TFLINT_VERSION: v0.62.0
+  TFSEC_VERSION: v1.28.14
 args:
   TERRAFORM_TAG: 1.14.9
-  TFLINT_VERSION: 0.62.0
-  TFSEC_VERSION: 1.28.14
+  TFLINT_VERSION: v0.62.0
+  TFSEC_VERSION: v1.28.14
