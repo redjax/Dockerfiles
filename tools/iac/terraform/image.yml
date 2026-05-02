@@ -22,13 +22,13 @@ components:
   terraform:
     type: dockerhub
     name: hashicorp/terraform
-    track: 1.14
+    track: 1.15
     version: 1.14.9
     arg: TERRAFORM_TAG
 upstream:
   registry: docker
   name: hashicorp/terraform
-  track: 1.14
+  track: 1.15
   version: 1.14.9
 version_args:
   TERRAFORM_TAG: 1.14.9
