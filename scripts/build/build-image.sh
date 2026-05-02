@@ -18,8 +18,8 @@ Usage:
   build-image.sh --context PATH --dockerfile PATH --name NAME --tag TAG [--registry-prefix PREFIX] [--build-arg KEY=VAL ...]
 
 Examples:
-  build-image.sh --context base/alpine --dockerfile base/alpine/Dockerfile --name alpine-base --tag 3.22.4
-  ALPINE_TAG=3.22.4 build-image.sh --context base/alpine --dockerfile base/alpine/Dockerfile --name alpine-base --tag "$ALPINE_TAG" --build-arg ALPINE_TAG="$ALPINE_TAG"
+  build-image.sh --context dockerfiles/base/alpine --dockerfile dockerfiles/base/alpine/Dockerfile --name alpine-base --tag 3.22.4
+  ALPINE_TAG=3.22.4 build-image.sh --context dockerfiles/base/alpine --dockerfile dockerfiles/base/alpine/Dockerfile --name alpine-base --tag "$ALPINE_TAG" --build-arg ALPINE_TAG="$ALPINE_TAG"
 EOF
 }
 

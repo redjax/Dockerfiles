@@ -30,8 +30,8 @@ name: container-name
 category: base
 description: A short description for the container.
 publish: true
-context: base/alpine
-dockerfile: base/alpine/Dockerfile
+context: dockerfiles/base/alpine
+dockerfile: dockerfiles/base/alpine/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/alpine-base
 
 components:
@@ -82,12 +82,12 @@ The `upstream.version` and `version_args` entries are typically the values updat
 
 The [`build-image.sh`](../scripts/build/build-image.sh) script is a generic helper for building container images from this repository. It can be used for local builds or from a pipeline.
 
-Example: build the [base Alpine container](../base/alpine/Dockerfile)
+Example: build the [base Alpine container](../dockerfiles/base/alpine/Dockerfile)
 
 ```shell
 ./scripts/build/build-image.sh \
-  --context base/alpine \
-  --dockerfile base/alpine/Dockerfile \
+  --context dockerfiles/base/alpine \
+  --dockerfile dockerfiles/base/alpine/Dockerfile \
   --name alpine-base \
   --tag 3.22.4 \
   --build-arg ALPINE_TAG=3.22
@@ -115,7 +115,7 @@ Example:
 
 ```shell
 ./scripts/update/bump-dockerfile-arg.sh \
-  --file base/alpine/image.yml
+  --file dockerfiles/base/alpine/image.yml
 ```
 
 > [!TIP]
@@ -123,7 +123,7 @@ Example:
 >
 > ```shell
 > ./scripts/update/bump-dockerfile-arg.sh \
->   --file base/alpine/image.yml \
+>   --file dockerfiles/base/alpine/image.yml \
 >   --dry-run
 > ```
 
@@ -151,8 +151,8 @@ name: terraform-tools
 category: tooling
 description: Terraform CLI image with tflint and tfsec installed.
 publish: true
-context: tools/iac/terraform
-dockerfile: tools/iac/terraform/Dockerfile
+context: dockerfiles/tools/iac/terraform
+dockerfile: dockerfiles/tools/iac/terraform/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/terraform-tools
 
 components:

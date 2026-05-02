@@ -3,8 +3,8 @@ name: debian-base
 category: base
 description: Minimal Debian base image with initial tooling installed.
 publish: true
-context: base/debian
-dockerfile: base/debian/Dockerfile
+context: dockerfiles/base/debian
+dockerfile: dockerfiles/base/debian/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/debian-base
 upstream:
   registry: docker

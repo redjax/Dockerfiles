@@ -19,7 +19,8 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: "Optional path to a single image directory, e.g. base/alpine"
+        description: "Optional path to a single image directory, e.g.
+          dockerfiles/base/alpine"
         required: false
         type: string
       dry_run:

@@ -3,8 +3,8 @@ name: alpine-base
 category: base
 description: Minimal Alpine base image with initial tooling installed.
 publish: true
-context: base/alpine
-dockerfile: base/alpine/Dockerfile
+context: dockerfiles/base/alpine
+dockerfile: dockerfiles/base/alpine/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/alpine-base
 upstream:
   registry: docker
