@@ -12,14 +12,14 @@ components:
     type: github_release
     repo: terraform-linters/tflint
     track: v0.62
-    version: 0.62.0
+    version: v0.62.0
     arg: TFLINT_VERSION
 
   tfsec:
     type: github_release
     repo: aquasecurity/tfsec
     track: v1.28
-    version: 1.28.14
+    version: v1.28.14
     arg: TFSEC_VERSION
 
   terraform:
