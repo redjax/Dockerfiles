@@ -93,7 +93,12 @@ jobs:
 
             echo "Processing $manifest"
 
-            output="$(./scripts/update/bump-image-manifest.sh --file "$manifest" ${DRY_RUN:+--dry-run})"
+            if [[ "${DRY_RUN}" == "true" ]]; then
+              output="$(./scripts/update/bump-image-manifest.sh --file "$manifest" --dry-run)"
+            else
+              output="$(./scripts/update/bump-image-manifest.sh --file "$manifest")"
+            fi
+
             echo "$output"
 
           done < manifests.txt
