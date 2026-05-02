@@ -20,6 +20,11 @@ on:
         required: false
         default: false
         type: boolean
+      force:
+        description: "Force build & publish even if unchanged"
+        required: false
+        default: false
+        type: boolean
 
   workflow_call:
     inputs:
@@ -66,11 +71,11 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x ./scripts/build/determine-images-to-build.sh
-          IMAGE_DIR="${{ inputs.image || '' }}" ./scripts/build/determine-images-to-build.sh build_list.txt
+          IMAGE_DIR="${{ inputs.image || '' }}" FORCE="${{ inputs.force }}"./scripts/build/determine-images-to-build.sh build_list.txt
 
       - name: Build and publish images
         shell: bash
         run: |
           set -euo pipefail
           chmod +x ./scripts/build/build-and-publish-images.sh
-          DRY_RUN="${{ inputs.dry_run }}" ./scripts/build/build-and-publish-images.sh build_list.txt
+          DRY_RUN="${{ inputs.dry_run }}" FORCE="${{ inputs.force }}" ./scripts/build/build-and-publish-images.sh build_list.txt
