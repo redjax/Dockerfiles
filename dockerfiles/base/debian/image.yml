@@ -9,9 +9,9 @@ registry_path: ghcr.io/redjax/dockerfiles/debian-base
 upstream:
   registry: docker
   name: debian
-  track: 12
-  version: "12.13"
+  track: 13
+  version: "13.4"
 version_args:
-  DEBIAN_TAG: "12.13"
+  DEBIAN_TAG: "13.4"
 args:
-  DEBIAN_TAG: "12.13"
+  DEBIAN_TAG: "13.4"
