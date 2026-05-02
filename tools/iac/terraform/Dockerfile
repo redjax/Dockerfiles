@@ -32,7 +32,7 @@ RUN apk add --no-cache \
 ARG TFLINT_VERSION
 
 RUN curl -fsSL \
-      "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_amd64.zip" \
+      "https://github.com/terraform-linters/tflint/releases/download/${TFLINT_VERSION}/tflint_linux_amd64.zip" \
       -o /tmp/tflint.zip \
     && unzip -q /tmp/tflint.zip -d /usr/local/bin \
     && rm -f /tmp/tflint.zip \
@@ -40,7 +40,7 @@ RUN curl -fsSL \
 
 ARG TFSEC_VERSION
 RUN curl -fsSL \
-      "https://github.com/aquasecurity/tfsec/releases/download/v${TFSEC_VERSION}/tfsec-linux-amd64" \
+      "https://github.com/aquasecurity/tfsec/releases/download/${TFSEC_VERSION}/tfsec-linux-amd64" \
       -o /usr/local/bin/tfsec \
     && chmod +x /usr/local/bin/tfsec
 
