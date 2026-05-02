@@ -71,7 +71,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x ./scripts/build/determine-images-to-build.sh
-          IMAGE_DIR="${{ inputs.image || '' }}" FORCE="${{ inputs.force }}"./scripts/build/determine-images-to-build.sh build_list.txt
+          IMAGE_DIR="${{ inputs.image || '' }}" FORCE="${{ inputs.force }}" ./scripts/build/determine-images-to-build.sh build_list.txt
 
       - name: Build and publish images
         shell: bash
