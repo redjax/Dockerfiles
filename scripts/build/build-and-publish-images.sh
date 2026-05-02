@@ -4,22 +4,25 @@ set -euo pipefail
 ####################################################
 # Build and publish containers that have changed.  #
 #                                                  #
-# Note: this script looks for a build_list.txt     #
-# file that has the paths to containers that need  #
-# (re)building.                                    #
+# Default behavior: build locally, compare the     #
+# built image digest to the remote tag digest, and #
+# only publish if different.                       #
 #                                                  #
-# This file is the output of:                      # 
-#   scripts/build/determine-images-to-build.sh     #
+# Use --force to always publish.                   #
 ####################################################
 
 build_list_file="build_list.txt"
 dry_run="${DRY_RUN:-false}"
+force="${FORCE:-false}"
 
-## Parse CLI args
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)
       dry_run="true"
+      shift
+      ;;
+    --force)
+      force="true"
       shift
       ;;
     -f|--file)
@@ -54,15 +57,23 @@ if [[ ! -s "$build_list_file" ]]; then
   exit 0
 fi
 
-## Find publishable images & read manifest
+get_remote_digest() {
+  local ref="$1"
+  docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}' 2>/dev/null || true
+}
+
+get_local_digest() {
+  local image_ref="$1"
+  docker image inspect "$image_ref" --format '{{index .RepoDigests 0}}' 2>/dev/null | awk -F@ '{print $2}' || true
+}
+
 while IFS= read -r image_dir; do
   [[ -n "$image_dir" ]] || continue
 
   manifest="$image_dir/image.yml"
   [[ -f "$manifest" ]] || continue
 
-  ## Check if publish: true in image.yml
-  publish="$(yq e '.publish' "$manifest")"
+  publish="$(yq e '.publish // false' "$manifest")"
   [[ "$publish" == "true" ]] || continue
 
   ## Populate vars from image.yml
@@ -73,13 +84,29 @@ while IFS= read -r image_dir; do
   tag="$(yq e '.upstream.version' "$manifest")"
 
   ## Read build args from image.yml
+  declare -A build_args_map
   build_args=()
+  
+  ## Base args
   while IFS= read -r key; do
     [[ -n "$key" ]] || continue
     value="$(yq e ".args.${key}" "$manifest")"
     [[ -n "$value" && "$value" != "null" ]] || continue
-    build_args+=(--build-arg "${key}=${value}")
+    build_args_map["$key"]="$value"
   done < <(yq e '.args | keys | .[]' "$manifest" 2>/dev/null || true)
+
+  ## version_args override
+  while IFS= read -r key; do
+    [[ -n "$key" ]] || continue
+    value="$(yq e ".version_args.${key}" "$manifest")"
+    [[ -n "$value" && "$value" != "null" ]] || continue
+    build_args_map["$key"]="$value"
+  done < <(yq e '.version_args | keys | .[]' "$manifest" 2>/dev/null || true)
+
+  ## Convert map to CLI args
+  for key in "${!build_args_map[@]}"; do
+    build_args+=(--build-arg "${key}=${build_args_map[$key]}")
+  done
 
   echo ""
   echo "Building $name from $manifest"
@@ -92,23 +119,43 @@ while IFS= read -r image_dir; do
     echo "[DRY RUN] docker push ${registry_path}:${tag}"
     echo "[DRY RUN] docker push ${registry_path}:latest"
     echo "[DRY RUN] docker push ${registry_path}:${short_sha}"
-  else
-    ## Build container image
-    ./scripts/build/build-image.sh \
-      --context "$context" \
-      --dockerfile "$dockerfile" \
-      --name "$name" \
-      --tag "$tag" \
-      "${build_args[@]}"
-
-    ## Tag image
-    docker tag "${name}:${tag}" "${registry_path}:${tag}"
-    docker tag "${name}:${tag}" "${registry_path}:latest"
-    docker tag "${name}:${tag}" "${registry_path}:${short_sha}"
-
-    ## Publish to registry
-    docker push "${registry_path}:${tag}"
-    docker push "${registry_path}:latest"
-    docker push "${registry_path}:${short_sha}"
+    continue
   fi
+
+  remote_digest=""
+  if [[ "$force" != "true" ]]; then
+    remote_digest="$(get_remote_digest "${registry_path}:${tag}")"
+    if [[ -n "$remote_digest" ]]; then
+      echo "Remote digest for ${registry_path}:${tag}: $remote_digest"
+    else
+      echo "Remote digest for ${registry_path}:${tag}: <not found>"
+    fi
+  fi
+
+  ./scripts/build/build-image.sh \
+    --context "$context" \
+    --dockerfile "$dockerfile" \
+    --name "$name" \
+    --tag "$tag" \
+    "${build_args[@]}"
+
+  local_digest="$(get_local_digest "${name}:${tag}")"
+  if [[ -n "$local_digest" ]]; then
+    echo "Local digest for ${name}:${tag}: $local_digest"
+  else
+    echo "Local digest for ${name}:${tag}: <not found>"
+  fi
+
+  if [[ "$force" != "true" && -n "$remote_digest" && -n "$local_digest" && "$remote_digest" == "$local_digest" ]]; then
+    echo "Skipping publish for ${name}:${tag}; image is unchanged."
+    continue
+  fi
+
+  docker tag "${name}:${tag}" "${registry_path}:${tag}"
+  docker tag "${name}:${tag}" "${registry_path}:latest"
+  docker tag "${name}:${tag}" "${registry_path}:${short_sha}"
+
+  docker push "${registry_path}:${tag}"
+  docker push "${registry_path}:latest"
+  docker push "${registry_path}:${short_sha}"
 done < "$build_list_file"
