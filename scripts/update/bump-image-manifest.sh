@@ -142,7 +142,7 @@ update_expr=".upstream.version = \"$latest\""
 ## Read values & replace with new versions
 while IFS= read -r key; do
   [[ -n "$key" ]] || continue
-  update_expr+=" | .version_args.${key} = \"$latest\""
+  update_expr+=" | .version_args.${key} = \"$latest\" | .args.${key} = \"$latest\""
 done <<< "$version_arg_keys"
 
 ## Write updates to temp file

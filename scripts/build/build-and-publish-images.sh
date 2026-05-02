@@ -84,13 +84,29 @@ while IFS= read -r image_dir; do
   tag="$(yq e '.upstream.version' "$manifest")"
 
   ## Read build args from image.yml
+  declare -A build_args_map
   build_args=()
+  
+  ## Base args
   while IFS= read -r key; do
     [[ -n "$key" ]] || continue
     value="$(yq e ".args.${key}" "$manifest")"
     [[ -n "$value" && "$value" != "null" ]] || continue
-    build_args+=(--build-arg "${key}=${value}")
+    build_args_map["$key"]="$value"
   done < <(yq e '.args | keys | .[]' "$manifest" 2>/dev/null || true)
+
+  ## version_args override
+  while IFS= read -r key; do
+    [[ -n "$key" ]] || continue
+    value="$(yq e ".version_args.${key}" "$manifest")"
+    [[ -n "$value" && "$value" != "null" ]] || continue
+    build_args_map["$key"]="$value"
+  done < <(yq e '.version_args | keys | .[]' "$manifest" 2>/dev/null || true)
+
+  ## Convert map to CLI args
+  for key in "${!build_args_map[@]}"; do
+    build_args+=(--build-arg "${key}=${build_args_map[$key]}")
+  done
 
   echo ""
   echo "Building $name from $manifest"
