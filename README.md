@@ -28,7 +28,7 @@
 
 ---
 
-Docker container images for different purposes. Some are runtime containers, others are meant to be run in CI/CD pipelines.
+A collection of my Dockerfiles organized by category. Pipeline automations check for image & tool updates each night. When new tags & releases are available, the pipeline rebuilds & releases the containers to the [package registry](https://github.com/redjax?tab=packages&repo_name=Dockerfiles).
 
 See the [usage docs](./docs/USAGE.md) for more information.
 
