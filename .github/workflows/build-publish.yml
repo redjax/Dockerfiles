@@ -9,6 +9,13 @@
 name: Build and publish images
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/image.yml"
+      - "**/Dockerfile"
+
   workflow_dispatch:
     inputs:
       image:
@@ -66,16 +73,41 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Detect changed files
+        id: diff
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            git diff --name-only HEAD~1 HEAD > changed_files.txt || true
+          else
+            : > changed_files.txt
+          fi
+
+          cat changed_files.txt || true
+
       - name: Determine images to build
         shell: bash
         run: |
           set -euo pipefail
+
           chmod +x ./scripts/build/determine-images-to-build.sh
-          IMAGE_DIR="${{ inputs.image || '' }}" FORCE="${{ inputs.force }}" ./scripts/build/determine-images-to-build.sh build_list.txt
+
+          IMAGE_DIR="${{ inputs.image || '' }}"
+          FORCE="${{ inputs.force }}"
+          CHANGED_FILES_FILE="changed_files.txt"
+
+          ./scripts/build/determine-images-to-build.sh build_list.txt
 
       - name: Build and publish images
         shell: bash
         run: |
           set -euo pipefail
+
           chmod +x ./scripts/build/build-and-publish-images.sh
-          DRY_RUN="${{ inputs.dry_run }}" FORCE="${{ inputs.force }}" ./scripts/build/build-and-publish-images.sh build_list.txt
+
+          DRY_RUN="${{ inputs.dry_run }}"
+          FORCE="${{ inputs.force }}"
+
+          ./scripts/build/build-and-publish-images.sh build_list.txt
