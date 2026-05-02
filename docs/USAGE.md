@@ -33,16 +33,20 @@ publish: true
 context: base/alpine
 dockerfile: base/alpine/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/alpine-base
+
+components:
+  alpine:
+    type: dockerhub
+    name: alpine
+    track: 3.22
+    version: 3.22.4
+    arg: ALPINE_TAG
+
 upstream:
   registry: docker
   name: alpine
   track: 3.22
   version: 3.22.4
-version_args:
-  ALPINE_TAG: 3.22.4
-args:
-  ALPINE_TAG: 3.22.4
-
 ```
 
 ### Manifest fields
@@ -54,7 +58,17 @@ args:
 - `context`: The build context path from the repository root.
 - `dockerfile`: The Dockerfile path from the repository root.
 - `registry_path`: The image registry path used when publishing.
-- `upstream`: Metadata for the image the container is based on, used by bump workflows to detect new versions.
+- `components`: Defines all versioned dependencies used in the image (both base images and installed tools). Each component defines:
+  - `type`: Source of version data (dockerhub, github_release, etc.)
+  - `name` or `repo`: Identifier for lookup
+  - `track`: Version track to follow
+  - `version`: Current resolved version
+  - `arg`: (optional) Dockerfile ARG that should be updated when version changes
+- `upstream`: Metadata for the image the container is based on, used by bump workflows to detect new versions. Each upstream defines:
+  - `registry`: Registry type (`docker`, `ghcr`, `gitlab`, etc.)
+  - `name`: Image name
+  - `track`: Version track to follow
+  - `version`: Currently pinned version
 - `version_args`: Build arguments whose default values should stay aligned with the manifest and Dockerfile.
 - `args`: Additional build arguments passed into the container at build time.
 
@@ -95,7 +109,7 @@ then the build uses `3.22` unless a different value is passed at build time.
 
 ### Bump script
 
-Each image directory can include an `image.yml` manifest that defines the Dockerfile path and the versioned build args that belong to that image. The bump script reads that manifest and updates matching `ARG` defaults in the referenced Dockerfile so the pinned values stay in sync with the repository metadata.
+Each image directory can include an `image.yml` manifest that defines the Dockerfile path and the versioned build args that belong to that image. The bump script reads that manifest and updates matching `ARG` defaults in the referenced Dockerfile so the pinned values stay in sync with the repository metadata. It also checks for updates to any components defined in the manifest.
 
 Example:
 
@@ -132,22 +146,43 @@ For a simple image definition, the manifest can be as small as this:
 
 ```yaml
 ---
-name: alpine-base
-category: base
-description: Alpine-based utility image
+---
+name: terraform-tools
+category: tooling
+description: Terraform CLI image with tflint and tfsec installed.
 publish: true
-context: base/alpine
-dockerfile: base/alpine/Dockerfile
-registry_path: ghcr.io/redjax/dockerfiles/alpine-base
+context: tools/iac/terraform
+dockerfile: tools/iac/terraform/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/terraform-tools
+
+components:
+  terraform:
+    type: dockerhub
+    name: hashicorp/terraform
+    track: 1.14
+    version: 1.14.9
+    arg: TERRAFORM_TAG
+
+  tflint:
+    type: github_release
+    repo: terraform-linters/tflint
+    track: v0.62
+    version: 0.62.0
+    arg: TFLINT_VERSION
+
+  tfsec:
+    type: github_release
+    repo: aquasecurity/tfsec
+    track: v1.28
+    version: 1.28.14
+    arg: TFSEC_VERSION
+
 upstream:
   registry: docker
-  name: alpine
-  track: 3.22
-  version: 3.22.4
-version_args:
-  ALPINE_TAG: 3.22.4
-args:
-  ALPINE_TAG: 3.22.4
+  name: hashicorp/terraform
+  track: 1.14
+  version: 1.14.9
+
 ```
 
 This keeps the image definition, build inputs, and pinned version values in one place, while the Dockerfile remains focused on build behavior.
