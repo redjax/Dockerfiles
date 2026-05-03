@@ -1,0 +1,61 @@
+---
+
+###############################################################
+# Trim old container images on the Github container registry. #
+###############################################################
+
+name: Trim old container images
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run - preview changes without deleting images"
+        required: false
+        default: false
+        type: boolean
+      apply:
+        description: "Whether to apply the changes (delete images when enabled)"
+        required: false
+        default: true
+        type: boolean
+      keep:
+        description: "Number of versions to retain (default: 5)"
+        required: false
+        default: 5
+        type: number
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  trim:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        uses: mikefarah/yq@v4.53.2
+
+      - name: Trim old container images
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DRY_RUN="${{ inputs.dry_run || 'false' }}"
+          APPLY="${{ inputs.apply || 'true' }}"
+          KEEP_VERSIONS="${{ inputs.keep || 5 }}"
+
+          echo "Running trim-images with dry_run=$DRY_RUN, apply=$APPLY, keep=$KEEP_VERSIONS"
+
+          # Run the trim script with the appropriate flags
+          if [[ "$APPLY" == "true" ]]; then
+            ./scripts/cleanup/trim-ghcr-images.sh --apply --keep "$KEEP_VERSIONS"
+          else
+            ./scripts/cleanup/trim-ghcr-images.sh --keep "$KEEP_VERSIONS"
+          fi
