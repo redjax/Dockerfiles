@@ -38,6 +38,8 @@ jobs:
 
       - name: Trim old container images
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
