@@ -15,11 +15,12 @@ Pipeline logic lives in the [`scripts/`](../scripts/) directory wherever possibl
 
 ## Update & Release Workflows
 
-The repository uses three workflow entry points:
+The repository uses these main workflow entry points:
 
 - [`update-images.yml`](../.github/workflows/update-images.yml) updates image manifests when a newer upstream release is available.
 - [`build-publish.yml`](../.github/workflows/build-publish.yml) builds and publishes container images defined by `image.yml`.
 - [`nightly-update.yml`](../.github/workflows/nightly-update.yml) runs the update and build workflows together on a schedule.
+- [`trim-images.yml`](../.github/workflows/trim-images.yml) runs a script that checks the container registry and deletes a number of older images/tags (default: keep 5 most recent).
 
 Each workflow can also be run manually, which makes it easier to test one stage without running the entire pipeline, or do emergency patches.
 
@@ -38,3 +39,5 @@ When `dry_run` is enabled, the workflow prints the commands it would run instead
 ### Nightly pipeline
 
 The nightly pipeline orchestrates the tag bump and build/publish pipelines into a scheduled task. It first runs the update workflow, then runs the build and publish workflow. This keeps images up to date with their upstream versions, and ensures the new versions are published to my container registry.
+
+It also runs the container registry cleanup script to trim older images.

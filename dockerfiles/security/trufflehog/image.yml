@@ -3,8 +3,8 @@ name: trufflehog
 category: security
 description: TruffleHog container image with pinned version.
 publish: true
-context: tools/security/trufflehog
-dockerfile: tools/security/trufflehog/Dockerfile
+context: dockerfiles/security/trufflehog
+dockerfile: dockerfiles/security/trufflehog/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/trufflehog
 upstream:
   registry: docker

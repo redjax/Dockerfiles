@@ -10,14 +10,21 @@
 name: Update image manifests
 
 on:
+  pull_request:
+    paths:
+      - "**/image.yml"
+      - "**/Dockerfile"
+      - "scripts/update/**"
+
   workflow_dispatch:
     inputs:
       image:
-        description: "Optional path to a single image directory, e.g. base/alpine"
+        description: "Optional path to a single image directory, e.g.
+          dockerfiles/base/alpine"
         required: false
         type: string
       dry_run:
-        description: "Preview changes without committing"
+        description: "Dry run - preview changes without committing"
         required: false
         default: false
         type: boolean
@@ -47,6 +54,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref }}
 
       - name: Install yq
         uses: mikefarah/yq@v4.53.2
@@ -69,9 +77,9 @@ jobs:
             find . -name image.yml -type f | sort > manifests.txt
           fi
 
-          count="$(wc -l < manifests.txt | tr -d ' ')"
-          if [[ "$count" -eq 0 ]]; then
+          if [[ ! -s manifests.txt ]]; then
             echo "No image manifests found."
+            exit 0
           fi
 
       - name: Update manifests and Dockerfiles
@@ -79,23 +87,21 @@ jobs:
         run: |
           set -euo pipefail
 
-          DRY_RUN="false"
-          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
-            DRY_RUN="true"
-          fi
+          DRY_RUN="${{ inputs.dry_run || false }}"
 
           while IFS= read -r manifest; do
             [[ -n "$manifest" ]] || continue
 
             echo "Processing $manifest"
 
-            if [[ "$DRY_RUN" == "true" ]]; then
-              ./scripts/update/bump-image-manifest.sh --file "$manifest" --dry-run
-              ./scripts/update/bump-dockerfile-arg.sh --file "$manifest" --dry-run
+            if [[ "${DRY_RUN}" == "true" ]]; then
+              output="$(./scripts/update/bump-image-manifest.sh --file "$manifest" --dry-run)"
             else
-              ./scripts/update/bump-image-manifest.sh --file "$manifest"
-              ./scripts/update/bump-dockerfile-arg.sh --file "$manifest"
+              output="$(./scripts/update/bump-image-manifest.sh --file "$manifest")"
             fi
+            
+            echo "$output"
+
           done < manifests.txt
 
       - name: Detect changes
@@ -104,12 +110,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          if git diff --quiet; then
+          git add -A
+
+          if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            git diff --stat
+            echo "No changes detected"
+            exit 0
           fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          git diff --stat
 
       - name: Show diff
         if: steps.changes.outputs.changed == 'true' && inputs.dry_run == true
@@ -119,6 +129,5 @@ jobs:
       - name: Commit and push
         if: steps.changes.outputs.changed == 'true' && inputs.dry_run != true
         run: |
-          git add -A
           git commit -m "chore: update image manifests and dockerfile args"
           git push

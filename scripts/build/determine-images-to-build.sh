@@ -5,27 +5,116 @@ set -euo pipefail
 # Scans the repository for image.yml manifests  #
 # and compiles a list of images to build.       #
 #                                               #
-# Only finds images where `publish: true`.      #
+# Default behavior: only include images that    #
+# appear changed since the last commit, unless  #
+# --force is used.                              #
 #################################################
 
 build_list_file="${1:-build_list.txt}"
+force="${FORCE:-false}"
+image_dir="${IMAGE_DIR:-}"
 
-## Open the build list file to write detected manifests to
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --force)
+      force="true"
+      shift
+      ;;
+    -f|--file)
+      build_list_file="${2:-}"
+      shift 2
+      ;;
+    --file=*)
+      build_list_file="${1#*=}"
+      shift
+      ;;
+    --image-dir)
+      image_dir="${2:-}"
+      shift 2
+      ;;
+    --image-dir=*)
+      image_dir="${1#*=}"
+      shift
+      ;;
+    -*)
+      echo "[ERROR] Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      build_list_file="$1"
+      shift
+      ;;
+  esac
+done
+
 : > "$build_list_file"
 
-if [[ -n "${IMAGE_DIR:-}" ]]; then
-  ## Only search for images in given directory
-  echo "$IMAGE_DIR" > "$build_list_file"
+is_publishable_manifest() {
+  local manifest="$1"
+  [[ -f "$manifest" ]] || return 1
+  local publish
+  publish="$(yq e '.publish // false' "$manifest")"
+  [[ "$publish" == "true" ]]
+}
+
+manifest_to_dir() {
+  dirname "$1"
+}
+
+if [[ "$force" == "true" ]]; then
+  if [[ -n "$image_dir" ]]; then
+    find "./$image_dir" -name image.yml -type f | sort | while IFS= read -r manifest; do
+      is_publishable_manifest "$manifest" || continue
+      manifest_to_dir "$manifest"
+    done | sort -u > "$build_list_file"
+  else
+    find . -name image.yml -type f | sort | while IFS= read -r manifest; do
+      is_publishable_manifest "$manifest" || continue
+      manifest_to_dir "$manifest"
+    done | sort -u > "$build_list_file"
+  fi
 else
-  ## Find all image.yml manifests
-  find . -name image.yml -type f | sort | while IFS= read -r manifest; do
+  changed_files_file="$(mktemp)"
+  trap 'rm -f "$changed_files_file"' EXIT
+
+  if git rev-parse --verify HEAD >/dev/null 2>&1; then
+    git diff --name-only HEAD~1..HEAD > "$changed_files_file" 2>/dev/null || git ls-files > "$changed_files_file"
+  else
+    git ls-files > "$changed_files_file"
+  fi
+
+  if [[ -n "$image_dir" ]]; then
+    search_root="./$image_dir"
+  else
+    search_root="."
+  fi
+
+  while IFS= read -r manifest; do
     [[ -n "$manifest" ]] || continue
+    is_publishable_manifest "$manifest" || continue
 
-    publish="$(yq e '.publish' "$manifest")"
-    [[ "$publish" == "true" ]] || continue
+    dir="$(dirname "$manifest")"
+    dockerfile="$(yq e '.dockerfile // ""' "$manifest")"
+    context="$(yq e '.context // ""' "$manifest")"
 
-    dirname "$manifest"
-  done | sort -u > "$build_list_file"
+    if grep -Fxq "$manifest" "$changed_files_file"; then
+      echo "$dir"
+      continue
+    fi
+
+    [[ -n "$dockerfile" ]] && grep -Fxq "$dockerfile" "$changed_files_file" && { echo "$dir"; continue; }
+
+    if [[ -n "$context" ]]; then
+      if grep -Fxq "$context" "$changed_files_file"; then
+        echo "$dir"
+        continue
+      fi
+      if grep -Fq "${context}/" "$changed_files_file"; then
+        echo "$dir"
+        continue
+      fi
+    fi
+  done < <(find "$search_root" -name image.yml -type f | sort) | sort -u > "$build_list_file"
 fi
 
 if [[ ! -s "$build_list_file" ]]; then
