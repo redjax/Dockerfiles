@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 ############################################################
 # Trim old GHCR container versions for published images.   #
@@ -59,7 +59,6 @@ function url_encode() {
 
 function parse_registry() {
   local input="$1"
-
   local path="${input#ghcr.io/}"
 
   local owner="${path%%/*}"
@@ -71,16 +70,6 @@ function parse_registry() {
   echo "$owner|$repo|$package"
 }
 
-function keep_version() {
-  local name="$1"
-  local tags="$2"
-
-  [[ "$name" == "latest" ]] && return 0
-  [[ "$tags" == *"latest"* ]] && return 0
-  return 1
-}
-
-## Find manifests
 mapfile -t manifests < <(find "$SCAN_PATH" -name image.yml -type f | sort)
 
 if ((${#manifests[@]} == 0)); then
@@ -88,8 +77,6 @@ if ((${#manifests[@]} == 0)); then
   exit 0
 fi
 
-## Loop over manifests & build registry path, then scan container registry
-#  for images/tags to delete
 for file in "${manifests[@]}"; do
   publish="$(yq e '.publish // false' "$file")"
   [[ "$publish" == "true" ]] || continue
@@ -97,23 +84,17 @@ for file in "${manifests[@]}"; do
   registry_path="$(yq e '.registry_path' "$file")"
   name="$(yq e '.name' "$file")"
 
-  [[ -n "$registry_path" && "$registry_path" != "null" ]] || continue
   [[ "$registry_path" == ghcr.io/* ]] || continue
 
   IFS='|' read -r owner repo package <<<"$(parse_registry "$registry_path")"
 
-  package_encoded="$(url_encode "$package")"
+  package_full="${repo}/${package}"
+  package_encoded="$(url_encode "$package_full")"
 
   echo ""
   echo "Checking ${name} (${owner}/${repo}/${package})"
 
-  package_full="${repo}/${package}"
-
-  package_encoded="$(url_encode "$package_full")"
-
   api_url="${GH_API_URL}/users/${owner}/packages/container/${package_encoded}/versions?per_page=100"
-
-  # echo "DEBUG: $api_url"
 
   versions_json="$(gh_api "$api_url")"
 
@@ -124,12 +105,11 @@ for file in "${manifests[@]}"; do
           (.id|tostring),
           (.name // ""),
           ((.metadata.container.tags // []) | join(",")),
-          (.created_at // ""),
-          (.updated_at // "")
+          (.created_at // "")
         ]
       | @tsv
     ' <<<"$versions_json" \
-    | sort -t $'\t' -k4,4r -k5,5r
+    | sort -t $'\t' -k4,4r
   )
 
   if ((${#version_rows[@]} == 0)); then
@@ -140,20 +120,30 @@ for file in "${manifests[@]}"; do
   kept=0
 
   for row in "${version_rows[@]}"; do
-    IFS=$'\t' read -r version_id version_name tags_csv created_at updated_at <<<"$row"
+    IFS=$'\t' read -r version_id version_name tags_csv created_at <<<"$row"
 
-    if keep_version "$version_name" "$tags_csv" || (( kept < KEEP_VERSIONS )); then
-      echo "  keep: ${version_id} ${version_name} [${tags_csv}]"
+    tags_display="${tags_csv:-<no-tags>}"
+
+    ## Always keep latest
+    if [[ "$tags_csv" == *"latest"* ]]; then
+      echo "  keep:   $version_id $version_name [$tags_display] (latest)"
+      continue
+    fi
+
+    ## keep newest N others
+    if (( kept < KEEP_VERSIONS )); then
+      echo "  keep:   $version_id $version_name [$tags_display]"
       ((kept++))
       continue
     fi
 
+    ## delete everything else
     if [[ "$DRY_RUN" == "true" ]]; then
-      echo "  dry-run delete: ${version_id} ${version_name} [${tags_csv}]"
+      echo "  delete: $version_id $version_name [$tags_display]"
     else
-      echo "  deleting: ${version_id} ${version_name} [${tags_csv}]"
+      echo "  deleting: $version_id $version_name [$tags_display]"
       gh_api_delete \
-        "${GH_API_URL}/repos/${owner}/${repo}/packages/container/${package_encoded}/versions/${version_id}"
+        "${GH_API_URL}/users/${owner}/packages/container/${package_encoded}/versions/${version_id}"
     fi
   done
 done
