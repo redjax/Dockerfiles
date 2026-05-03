@@ -80,6 +80,7 @@ while IFS= read -r image_dir; do
   context="$(yq e '.context' "$manifest")"
   dockerfile="$(yq e '.dockerfile' "$manifest")"
   name="$(yq e '.name' "$manifest")"
+  description="$(yq e '.description' "$manifest")"
   registry_path="$(yq e '.registry_path' "$manifest")"
   tag="$(yq e '.upstream.version' "$manifest")"
 
@@ -112,7 +113,7 @@ while IFS= read -r image_dir; do
   echo "Building $name from $manifest"
 
   if [[ "$dry_run" == "true" ]]; then
-    echo "[DRY RUN] ./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --tag $tag ${build_args[*]}"
+    echo "[DRY RUN] ./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --description $description --tag $tag ${build_args[*]}"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${tag}"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:latest"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${short_sha}"
@@ -137,6 +138,7 @@ while IFS= read -r image_dir; do
     --dockerfile "$dockerfile" \
     --name "$name" \
     --tag "$tag" \
+    --description "$description" \
     "${build_args[@]}"
 
   local_digest="$(get_local_digest "${name}:${tag}")"
