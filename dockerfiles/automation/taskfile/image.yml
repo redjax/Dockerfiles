@@ -7,10 +7,10 @@ context: dockerfiles/automation/taskfile
 dockerfile: dockerfiles/automation/taskfile/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/taskfile
 components:
-  tflint:
+  taskfile:
     type: github_release
-    repo: taskfile/task
-    track: v3.50
+    repo: go-task/task
+    track: v3
     version: v3.50.0
     arg: TASKFILE_VERSION
 upstream:
