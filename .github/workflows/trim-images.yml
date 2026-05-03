@@ -1,5 +1,4 @@
 ---
-
 ###############################################################
 # Trim old container images on the Github container registry. #
 ###############################################################
@@ -9,13 +8,8 @@ name: Trim old container images
 on:
   workflow_dispatch:
     inputs:
-      dry_run:
-        description: "Dry run - preview changes without deleting images"
-        required: false
-        default: false
-        type: boolean
       apply:
-        description: "Whether to apply the changes (delete images when enabled)"
+        description: "Apply changes (delete images when enabled. Disable for dry run)"
         required: false
         default: true
         type: boolean
@@ -44,16 +38,17 @@ jobs:
 
       - name: Trim old container images
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
-          DRY_RUN="${{ inputs.dry_run || 'false' }}"
-          APPLY="${{ inputs.apply || 'true' }}"
+          APPLY="${{ inputs.apply || false }}"
           KEEP_VERSIONS="${{ inputs.keep || 5 }}"
 
-          echo "Running trim-images with dry_run=$DRY_RUN, apply=$APPLY, keep=$KEEP_VERSIONS"
+          echo "Running trim-images with apply=$APPLY, keep=$KEEP_VERSIONS"
 
-          # Run the trim script with the appropriate flags
+          ## Run the trim script with the appropriate flags
           if [[ "$APPLY" == "true" ]]; then
             ./scripts/cleanup/trim-ghcr-images.sh --apply --keep "$KEEP_VERSIONS"
           else
