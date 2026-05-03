@@ -78,25 +78,35 @@ if ((${#manifests[@]} == 0)); then
 fi
 
 for file in "${manifests[@]}"; do
+(
+  set +e  # isolate errors per image
+
   publish="$(yq e '.publish // false' "$file")"
-  [[ "$publish" == "true" ]] || continue
+  [[ "$publish" == "true" ]] || exit 0
 
   registry_path="$(yq e '.registry_path' "$file")"
   name="$(yq e '.name' "$file")"
 
-  [[ "$registry_path" == ghcr.io/* ]] || continue
+  [[ "$registry_path" == ghcr.io/* ]] || exit 0
 
   IFS='|' read -r owner repo package <<<"$(parse_registry "$registry_path")"
 
   package_full="${repo}/${package}"
   package_encoded="$(url_encode "$package_full")"
 
-  echo ""
-  echo "Checking ${name} (${owner}/${repo}/${package})"
-
   api_url="${GH_API_URL}/users/${owner}/packages/container/${package_encoded}/versions?per_page=100"
 
-  versions_json="$(gh_api "$api_url")"
+  echo ""
+  echo "Checking ${name} (${owner}/${repo}/${package})"
+  # echo "DEBUG: $api_url"
+  echo
+
+  versions_json="$(gh_api "$api_url" || true)"
+
+  if [[ -z "${versions_json}" || "${versions_json}" == "null" ]]; then
+    echo "  [WARN] failed to fetch versions"
+    exit 0
+  fi
 
   mapfile -t version_rows < <(
     jq -r '
@@ -111,11 +121,6 @@ for file in "${manifests[@]}"; do
     ' <<<"$versions_json" \
     | sort -t $'\t' -k4,4r
   )
-
-  if ((${#version_rows[@]} == 0)); then
-    echo "  No versions found."
-    continue
-  fi
 
   kept=0
 
@@ -143,7 +148,13 @@ for file in "${manifests[@]}"; do
     else
       echo "  deleting: $version_id $version_name [$tags_display]"
       gh_api_delete \
-        "${GH_API_URL}/users/${owner}/packages/container/${package_encoded}/versions/${version_id}"
+        "${GH_API_URL}/users/${owner}/packages/container/${package_encoded}/versions/${version_id}" \
+        || echo "  [WARN] delete failed"
     fi
   done
+
+  set -e
+) || {
+  echo "[WARN] failed processing $(basename "$file"), continuing"
+}
 done
