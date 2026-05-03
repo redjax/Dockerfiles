@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-############################################################
-# Trim old GHCR container versions for published images.   #
-#                                                          #
-# The script takes no actions unless you pass --apply.     #
-# Note that the script takes a Github API token, which you #
-# should create on Github. The token should have the       #
-# following permissions:                                   #
-#   - repo                                                 #
-#   - write:packages & read:packages                       #
-#   - delete:packages                                      #
-#                                                          #
-# You can create an API key in your Github settings at:    #
-#   https://github.com/settings/tokens/                    #
-#                                                          #
-############################################################
+#############################################################
+# Trim old GHCR container versions for published images.    #
+#                                                           #
+# The script takes no actions unless you pass --apply.      #
+# You can use --keep to manually override how many versions #
+# should be retained (default is 5).                        #
+#                                                           #
+# Note that the script takes a Github API token, which you  #
+# should create on Github. The token should have the        #
+# following permissions:                                    #
+#   - repo                                                  #
+#   - write:packages & read:packages                        #
+#   - delete:packages                                       #
+#                                                           #
+# You can create an API key in your GitHub settings at:     #
+#   https://github.com/settings/tokens/                     #
+#                                                           #
+#############################################################
 
 for cmd in curl jq yq sort awk grep cut tr; do
   command -v "$cmd" >/dev/null 2>&1 || {
@@ -28,13 +31,58 @@ THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${THIS_DIR}/../.." && pwd)"
 
 KEEP_VERSIONS="${KEEP_VERSIONS:-5}"
-DRY_RUN="${DRY_RUN:-true}"
 SCAN_PATH="${SCAN_PATH:-$REPO_ROOT}"
 GH_TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
 GH_API_URL="${GH_API_URL:-https://api.github.com}"
 
 [[ -n "$GH_TOKEN" ]] || { echo "[ERROR] GH_TOKEN required" >&2; exit 1; }
 [[ -d "$SCAN_PATH" ]] || { echo "[ERROR] scan path not found: $SCAN_PATH" >&2; exit 1; }
+
+APPLY="false"
+
+function usage() {
+  echo ""
+  echo "Usage: $0 [OPTIONS]"
+  echo "Description:"
+  echo "  Scans container registry and removes all tags older than the most recent N,"
+  echo "  where N is the value of --keep (default: 5)."
+  echo ""
+  echo "  By default, no action is taken, you must pass --apply to delete images."
+  echo ""
+  echo "Options:"
+  echo "  --apply     Apply the changes (delete old images)"
+  echo "  --keep N    Retain the most recent N images (default: 5)"
+  echo "  -h, --help  Print this help menu"
+  echo ""
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --help)
+      usage
+      exit 0
+      ;;
+    --apply)
+      APPLY="true"
+      shift
+      ;;
+    --keep)
+      KEEP_VERSIONS="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown option: $1"
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+## Ensure we print out what would happen if --apply is not specified
+if [[ "$APPLY" == "false" ]]; then
+  echo "[INFO] No action will be taken. Use --apply to delete old images."
+  echo "[INFO] The following actions would have been taken:"
+fi
 
 function gh_api() {
   curl -fsSL \
@@ -143,13 +191,13 @@ for file in "${manifests[@]}"; do
     fi
 
     ## delete everything else
-    if [[ "$DRY_RUN" == "true" ]]; then
-      echo "  delete: $version_id $version_name [$tags_display]"
-    else
+    if [[ "$APPLY" == "true" ]]; then
       echo "  deleting: $version_id $version_name [$tags_display]"
       gh_api_delete \
         "${GH_API_URL}/users/${owner}/packages/container/${package_encoded}/versions/${version_id}" \
         || echo "  [WARN] delete failed"
+    else
+      echo "  would delete: $version_id $version_name [$tags_display]"
     fi
   done
 
