@@ -43,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          APPLY="${{ inputs.apply || true }}"
+          APPLY="${{ inputs.apply || false }}"
           KEEP_VERSIONS="${{ inputs.keep || 5 }}"
 
           echo "Running trim-images with apply=$APPLY, keep=$KEEP_VERSIONS"
