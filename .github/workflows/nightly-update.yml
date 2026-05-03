@@ -27,3 +27,9 @@ jobs:
     needs: update
     uses: ./.github/workflows/build-publish.yml
     secrets: inherit
+
+  trim_images:
+    ## Run after the manifest update & build/publish stages
+    needs: [ update, build_publish ]
+    uses: ./.github/workflows/trim-images.yml
+    secrets: inherit
