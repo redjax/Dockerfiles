@@ -22,10 +22,17 @@ on:
         required: false
         type: string
       dry_run:
+        description: "Describe actions without taking them"
         required: false
         default: false
         type: boolean
       force:
+        description: "Force-add all containers for processing"
+        required: false
+        default: false
+        type: boolean
+      enable_publish:
+        description: "Enable/disable publishing to container registry"
         required: false
         default: false
         type: boolean
@@ -55,6 +62,7 @@ jobs:
       dry_run: ${{ steps.meta.outputs.dry_run }}
       force: ${{ steps.meta.outputs.force }}
       image: ${{ steps.meta.outputs.image }}
+      enable_publish: ${{ steps.meta.outputs.enable_publish }}
 
     steps:
       - uses: actions/checkout@v6
@@ -73,10 +81,12 @@ jobs:
           DRY_RUN="${{ inputs.dry_run || false }}"
           FORCE="${{ inputs.force || false }}"
           IMAGE="${{ inputs.image || '' }}"
+          ENABLE_PUBLISH="${{ inputs.enable_publish || false }}"
 
           echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
           echo "force=$FORCE" >> $GITHUB_OUTPUT
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "enable_publish=$ENABLE_PUBLISH" >> $GITHUB_OUTPUT
 
       - name: Detect changed files
         shell: bash
@@ -149,5 +159,6 @@ jobs:
           ARGS=()
           [[ "${{ needs.plan.outputs.dry_run }}" == "true" ]] && ARGS+=(--dry-run)
           [[ "${{ needs.plan.outputs.force }}" == "true" ]] && ARGS+=(--force)
+          [[ "${{ needs.plan.outputs.enable_publish }}" == "true" ]] && ARGS+=(--publish)
 
           ./scripts/build/build-and-publish-images.sh "${ARGS[@]}" build_list.txt

@@ -14,6 +14,7 @@ set -euo pipefail
 build_list_file="build_list.txt"
 dry_run="${DRY_RUN:-false}"
 force="${FORCE:-false}"
+enable_publishing="${PUBLISH:-false}"
 
 function usage() {
   cat <<EOF
@@ -34,6 +35,7 @@ Options:
   --force           Always publish images, skipping digest comparison
   -f, --file PATH   Path to build list file (same as positional arg)
   --file=PATH       Same as above
+  --publish         Enable publishing to the container registry (default: false)
   -h, --help        Show this help message
 
 Behavior:
@@ -48,6 +50,7 @@ Behavior:
 Environment:
   DRY_RUN=true           Equivalent to --dry-run
   FORCE=true             Equivalent to --force
+  PUBLISH=true           Equivalent to --publish
   GITHUB_SHA             Used for short SHA tagging (falls back to git)
 
 Notes:
@@ -72,6 +75,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --file=*)
       build_list_file="${1#*=}"
+      shift
+      ;;
+    -P|--publish)
+      enable_publishing="true"
       shift
       ;;
     -*)
@@ -107,6 +114,9 @@ function get_local_digest() {
   local image_ref="$1"
   docker image inspect "$image_ref" --format '{{index .RepoDigests 0}}' 2>/dev/null | awk -F@ '{print $2}' || true
 }
+
+echo "Processing ${build_list_file} for container images to build"
+echo "dry run: $dry_run, publish to container registry: $enable_publishing"
 
 while IFS= read -r image_dir; do
   [[ -n "$image_dir" ]] || continue
@@ -151,16 +161,20 @@ while IFS= read -r image_dir; do
   done
 
   echo ""
-  echo "Building $name from $manifest"
+  echo "[+] Building $name from $manifest"
 
   if [[ "$dry_run" == "true" ]]; then
     echo "[DRY RUN] ./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --description $description --tag $tag ${build_args[*]}"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${tag}"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:latest"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${short_sha}"
-    echo "[DRY RUN] docker push ${registry_path}:${tag}"
-    echo "[DRY RUN] docker push ${registry_path}:latest"
-    echo "[DRY RUN] docker push ${registry_path}:${short_sha}"
+
+    if [[ "${enable_publishing}" = "true" ]]; then
+      echo "[DRY RUN] docker push ${registry_path}:${tag}"
+      echo "[DRY RUN] docker push ${registry_path}:latest"
+      echo "[DRY RUN] docker push ${registry_path}:${short_sha}"
+    fi
+
     continue
   fi
 
@@ -174,13 +188,17 @@ while IFS= read -r image_dir; do
     fi
   fi
 
-  ./scripts/build/build-image.sh \
-    --context "$context" \
-    --dockerfile "$dockerfile" \
-    --name "$name" \
-    --tag "$tag" \
-    --description "$description" \
-    "${build_args[@]}"
+  if [[ "$dry_run" == "true" ]]; then
+    echo "[DRY RUN] build-image.sh --context $context --dockerfile $dockerfile --name $name --tag $tag"
+  else
+    ./scripts/build/build-image.sh \
+      --context "$context" \
+      --dockerfile "$dockerfile" \
+      --name "$name" \
+      --tag "$tag" \
+      --description "$description" \
+      "${build_args[@]}"
+  fi
 
   local_digest="$(get_local_digest "${name}:${tag}")"
   if [[ -n "$local_digest" ]]; then
@@ -194,11 +212,25 @@ while IFS= read -r image_dir; do
     continue
   fi
 
-  docker tag "${name}:${tag}" "${registry_path}:${tag}"
-  docker tag "${name}:${tag}" "${registry_path}:latest"
-  docker tag "${name}:${tag}" "${registry_path}:${short_sha}"
+  if [[ "$dry_run" == "true" ]]; then
+    echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${tag}"
+    echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:latest"
+    echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${short_sha}"
 
-  docker push "${registry_path}:${tag}"
-  docker push "${registry_path}:latest"
-  docker push "${registry_path}:${short_sha}"
+    if [[ "$enable_publishing" == "true" ]]; then
+      echo "[DRY RUN] docker push ${registry_path}:${tag}"
+      echo "[DRY RUN] docker push ${registry_path}:latest"
+      echo "[DRY RUN] docker push ${registry_path}:${short_sha}"
+    fi
+  else
+    docker tag "${name}:${tag}" "${registry_path}:${tag}"
+    docker tag "${name}:${tag}" "${registry_path}:latest"
+    docker tag "${name}:${tag}" "${registry_path}:${short_sha}"
+
+    if [[ "${enable_publishing}" == "true" ]]; then
+      docker push "${registry_path}:${tag}"
+      docker push "${registry_path}:latest"
+      docker push "${registry_path}:${short_sha}"
+    fi
+  fi
 done < "$build_list_file"
