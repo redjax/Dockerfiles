@@ -15,6 +15,47 @@ build_list_file="build_list.txt"
 dry_run="${DRY_RUN:-false}"
 force="${FORCE:-false}"
 
+function usage() {
+  cat <<EOF
+Usage:
+  $0 [OPTIONS] [BUILD_LIST_FILE]
+
+Builds and publishes container images listed in a build list file.
+
+Each entry in the build list should be a directory containing an image.yml
+manifest. The script builds the image, compares its digest with the remote
+registry, and only pushes if the image has changed (unless --force is used).
+
+Arguments:
+  BUILD_LIST_FILE   File containing image directories to process (default: build_list.txt)
+
+Options:
+  --dry-run         Print build/publish steps without executing them
+  --force           Always publish images, skipping digest comparison
+  -f, --file PATH   Path to build list file (same as positional arg)
+  --file=PATH       Same as above
+  -h, --help        Show this help message
+
+Behavior:
+  - Skips entries without image.yml or with 'publish: false'
+  - Builds images using ./scripts/build/build-image.sh
+  - Tags images as:
+    - <registry_path>:<version>
+    - <registry_path>:latest
+    - <registry_path>:<git-sha>
+  - Compares local vs remote digests before pushing (unless --force)
+
+Environment:
+  DRY_RUN=true           Equivalent to --dry-run
+  FORCE=true             Equivalent to --force
+  GITHUB_SHA             Used for short SHA tagging (falls back to git)
+
+Notes:
+  - build list entries must be directories, not image.yml paths
+  - requires: docker, docker buildx, yq, jq, git
+EOF
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)
