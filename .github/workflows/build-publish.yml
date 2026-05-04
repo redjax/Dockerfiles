@@ -96,11 +96,14 @@ jobs:
 
           chmod +x ./scripts/build/determine-images-to-build.sh
 
-          IMAGE_DIR="${{ inputs.image || '' }}"
-          FORCE="${{ inputs.force }}"
-          CHANGED_FILES_FILE="changed_files.txt"
+          export IMAGE_DIR="${{ inputs.image }}"
+          export FORCE="${{ inputs.force }}"
 
-          ./scripts/build/determine-images-to-build.sh build_list.txt
+          ARGS=()
+          [[ -n "$IMAGE_DIR" ]] && ARGS+=(--image-dir "$IMAGE_DIR")
+          [[ "$FORCE" == "true" ]] && ARGS+=(--force)
+
+          ./scripts/build/determine-images-to-build.sh "${ARGS[@]}" build_list.txt
 
       - name: Build and publish images
         shell: bash
@@ -112,4 +115,8 @@ jobs:
           DRY_RUN="${{ inputs.dry_run || false }}"
           FORCE="${{ inputs.force || false }}"
 
-          ./scripts/build/build-and-publish-images.sh build_list.txt
+          ARGS=()
+          [[ "${DRY_RUN}" == "true" ]] && ARGS+=(--dry-run)
+          [[ "${FORCE}" == "true" ]] && ARGS+=(--force)
+
+          ./scripts/build/build-and-publish-images.sh "${ARGS[@]}" build_list.txt
