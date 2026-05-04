@@ -48,3 +48,33 @@ tasks:
         if [ ! -s build_list.txt ]; then
           echo "Did not detect any images to build"
         fi
+
+  build-and-publish:
+    desc: "Build and publish images from build list"
+    vars:
+      DRY_RUN: "{{.DRY_RUN | default \"false\"}}"
+      FORCE: "{{.FORCE | default \"false\"}}"
+      PUBLISH: "{{.PUBLISH | default \"false\"}}"
+
+    deps:
+      - get-build-targets
+
+    cmds:
+      - |
+        set -euo pipefail
+
+        ARGS=()
+
+        if [ "{{.DRY_RUN}}" = "true" ]; then
+          ARGS+=(--dry-run)
+        fi
+
+        if [ "{{.FORCE}}" = "true" ]; then
+          ARGS+=(--force)
+        fi
+
+        if [[ "{{.PUBLISH}}" = "true" ]]; then
+          ARGS+=(--publish)
+        fi
+
+        ./scripts/build/build-and-publish-images.sh "${ARGS[@]}" build_list.txt
