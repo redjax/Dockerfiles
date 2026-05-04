@@ -125,3 +125,24 @@ tasks:
 
         git commit -m "chore: update image manifests and dockerfile args"
         git push
+
+  audit-versions:
+    desc: "Run the check-for-updates.sh script to audit versions, including upstream
+      Docker tags & software versions"
+    silent: true
+    vars:
+      GITHUB_TOKEN: "{{.GITHUB_TOKEN | default \"\"}}"
+      SCAN_PATH: "{{.SCAN_PATH | default \"\"}}"
+    cmds:
+      - |
+        set -euo pipefail
+
+        export GITHUB_TOKEN="{{.GITHUB_TOKEN}}"
+
+        ARGS=()
+
+        if [[ -n "{{.SCAN_PATH}}" ]]; then
+          ARGS+=(--path "{{.SCAN_PATH}}")
+        fi
+
+        ./scripts/update/check-for-updates.sh "${ARGS[@]}"
