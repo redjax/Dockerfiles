@@ -57,12 +57,12 @@ if [[ ! -s "$build_list_file" ]]; then
   exit 0
 fi
 
-get_remote_digest() {
+function get_remote_digest() {
   local ref="$1"
   docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}' 2>/dev/null || true
 }
 
-get_local_digest() {
+function get_local_digest() {
   local image_ref="$1"
   docker image inspect "$image_ref" --format '{{index .RepoDigests 0}}' 2>/dev/null | awk -F@ '{print $2}' || true
 }

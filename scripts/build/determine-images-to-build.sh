@@ -49,7 +49,7 @@ done
 
 : > "$build_list_file"
 
-is_publishable_manifest() {
+function is_publishable_manifest() {
   local manifest="$1"
   [[ -f "$manifest" ]] || return 1
   local publish
@@ -57,7 +57,7 @@ is_publishable_manifest() {
   [[ "$publish" == "true" ]]
 }
 
-manifest_to_dir() {
+function manifest_to_dir() {
   dirname "$1"
 }
 
