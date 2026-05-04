@@ -3,7 +3,6 @@ version: "3"
 
 vars:
   REGISTRY: "{{.REGISTRY | default \"ghcr.io/redjax\"}}"
-  FORCE: "{{.FORCE | default \"false\"}}"
 
 tasks:
   detect-changes:
