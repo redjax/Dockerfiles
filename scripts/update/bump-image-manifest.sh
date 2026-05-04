@@ -15,14 +15,18 @@ set -euo pipefail
 # version_args even if upstream did not change #
 ################################################
 
+GH_TOKEN="${GITHUB_TOKEN:-}"
+
 function usage() {
   cat <<EOF
 Usage:
-  ${0} [OPTIONS]
+  ${0} --file PATH [OPTIONS]
 
 Options:
-  --file     Path to image.yml
-  --dry-run  Check for updates only; do not modify files
+  --file PATH          Path to image.yml (required)
+  --dry-run            Check for updates only; do not modify files
+  --github-token TOKEN GitHub token (or set GITHUB_TOKEN env var)
+  -h, --help           Show this help menu
 EOF
 }
 
@@ -78,6 +82,7 @@ source "${LIB_DIR}/acr.sh"
 ## Parse CLI arguments
 FILE=""
 DRY_RUN=false
+GH_TOKEN="${GITHUB_TOKEN:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -87,6 +92,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --dry-run)
       DRY_RUN=true
+      shift
+      ;;
+    --github-token)
+      GH_TOKEN="$2"
+      shift 2
+      ;;
+    --github-token=*)
+      GH_TOKEN="${1#*=}"
       shift
       ;;
     -h|--help)
