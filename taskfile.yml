@@ -11,3 +11,8 @@ includes:
   docker:
     taskfile: .tasks/docker-tasks.yml
     dir: .
+
+  ## Git tasks
+  git:
+    taskfile: .tasks/git-tasks.yml
+    dir: .
