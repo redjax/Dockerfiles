@@ -30,12 +30,9 @@ Arguments:
 
 Options:
   --force                Include all publishable images (ignore git changes)
-
   -f, --file PATH        Output file for build list (same as positional arg)
   --file=PATH            Same as above
-
   --image-dir PATH       Limit scan to a specific subdirectory
-
   -h, --help             Show this help message
 
 Notes:
