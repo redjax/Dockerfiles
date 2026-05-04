@@ -1,0 +1,17 @@
+---
+name: kics
+category: security
+description: checkmarx/kics container image with pinned version.
+publish: true
+context: dockerfiles/security/kics
+dockerfile: dockerfiles/security/kics/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/kics
+upstream:
+  registry: docker
+  name: checkmarx/kics
+  track: 2.1
+  version: 2.1.20
+version_args:
+  KICS_TAG: 2.1.20
+args:
+  KICS_TAG: 2.1.20

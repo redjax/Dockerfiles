@@ -10,8 +10,7 @@ name: Build and publish images
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
     paths:
       - "**/image.yml"
       - "**/Dockerfile"
@@ -19,17 +18,14 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: "Optional path to a single image directory, e.g.
-          dockerfiles/base/alpine"
+        description: "Optional path to a single image directory"
         required: false
         type: string
       dry_run:
-        description: "Build without pushing"
         required: false
         default: false
         type: boolean
       force:
-        description: "Force build & publish even if unchanged"
         required: false
         default: false
         type: boolean
@@ -37,14 +33,13 @@ on:
   workflow_call:
     inputs:
       image:
-        description: "Optional path to a single image directory, e.g.
-          dockerfiles/base/alpine"
         required: false
         type: string
       dry_run:
-        description: "Build without pushing"
         required: false
-        default: false
+        type: boolean
+      force:
+        required: false
         type: boolean
 
 permissions:
@@ -52,31 +47,38 @@ permissions:
   packages: write
 
 jobs:
-  build:
+  plan:
     runs-on: ubuntu-latest
 
+    outputs:
+      empty: ${{ steps.buildlist.outputs.empty }}
+      dry_run: ${{ steps.meta.outputs.dry_run }}
+      force: ${{ steps.meta.outputs.force }}
+      image: ${{ steps.meta.outputs.image }}
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Install yq
-        uses: mikefarah/yq@v4.53.2
+      - uses: mikefarah/yq@v4.53.2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+      ## Normalize inputs so push / dispatch / call all behave the same
+      - name: Normalize inputs
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Log in to GHCR
-        if: inputs.dry_run != true
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN="${{ inputs.dry_run || false }}"
+          FORCE="${{ inputs.force || false }}"
+          IMAGE="${{ inputs.image || '' }}"
+
+          echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
+          echo "force=$FORCE" >> $GITHUB_OUTPUT
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
 
       - name: Detect changed files
-        id: diff
         shell: bash
         run: |
           set -euo pipefail
@@ -87,20 +89,55 @@ jobs:
             : > changed_files.txt
           fi
 
-          cat changed_files.txt || true
-
       - name: Determine images to build
+        id: buildlist
         shell: bash
         run: |
           set -euo pipefail
 
           chmod +x ./scripts/build/determine-images-to-build.sh
 
-          IMAGE_DIR="${{ inputs.image || '' }}"
-          FORCE="${{ inputs.force }}"
-          CHANGED_FILES_FILE="changed_files.txt"
+          ARGS=()
+          [[ -n "${{ steps.meta.outputs.image }}" ]] && ARGS+=(--image-dir "${{ steps.meta.outputs.image }}")
+          [[ "${{ steps.meta.outputs.force }}" == "true" ]] && ARGS+=(--force)
 
-          ./scripts/build/determine-images-to-build.sh build_list.txt
+          ./scripts/build/determine-images-to-build.sh "${ARGS[@]}" build_list.txt
+
+          if [[ -s build_list.txt ]]; then
+            echo "empty=false" >> $GITHUB_OUTPUT
+          else
+            echo "empty=true" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/upload-artifact@v7
+        if: steps.buildlist.outputs.empty != 'true'
+        with:
+          name: build-list
+          path: build_list.txt
+
+  build:
+    runs-on: ubuntu-latest
+    needs: plan
+    if: needs.plan.outputs.empty == 'false'
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: build-list
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        if: needs.plan.outputs.dry_run != 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and publish images
         shell: bash
@@ -109,7 +146,8 @@ jobs:
 
           chmod +x ./scripts/build/build-and-publish-images.sh
 
-          DRY_RUN="${{ inputs.dry_run || false }}"
-          FORCE="${{ inputs.force || false }}"
+          ARGS=()
+          [[ "${{ needs.plan.outputs.dry_run }}" == "true" ]] && ARGS+=(--dry-run)
+          [[ "${{ needs.plan.outputs.force }}" == "true" ]] && ARGS+=(--force)
 
-          ./scripts/build/build-and-publish-images.sh build_list.txt
+          ./scripts/build/build-and-publish-images.sh "${ARGS[@]}" build_list.txt

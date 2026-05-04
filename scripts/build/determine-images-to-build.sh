@@ -1,16 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-#################################################
-# Scans the repository for image.yml manifests  #
-# and compiles a list of images to build.       #
-#                                               #
-# Default behavior: only include images that    #
-# appear changed since the last commit, unless  #
-# --force is used.                              #
-#################################################
-
-build_list_file="${build_list.txt}"
+build_list_file="build_list.txt"
 force="${FORCE:-false}"
 image_dir="${IMAGE_DIR:-}"
 
@@ -19,29 +10,10 @@ function usage() {
 Usage:
   $0 [OPTIONS] [OUTPUT_FILE]
 
-Scans the repository for image.yml manifests and writes a list of image
-directories that should be built.
-
-By default, only images affected by recent git changes are included.
-Use --force to include all publishable images.
-
-Arguments:
-  OUTPUT_FILE            Path to write the build list (default: build_list.txt)
-
 Options:
-  --force                Include all publishable images (ignore git changes)
-  -f, --file PATH        Output file for build list (same as positional arg)
-  --file=PATH            Same as above
-  --image-dir PATH       Limit scan to a specific subdirectory
-  -h, --help             Show this help message
-
-Notes:
-  - Only manifests with 'publish: true' are considered
-  - Output contains directories, not image.yml file paths
-  - Change detection includes:
-    - image.yml changes
-    - Dockerfile changes
-    - build context changes
+  --force
+  --image-dir PATH
+  -h, --help
 EOF
 }
 
@@ -49,14 +21,6 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --force)
       force="true"
-      shift
-      ;;
-    -f|--file)
-      build_list_file="${2:-}"
-      shift 2
-      ;;
-    --file=*)
-      build_list_file="${1#*=}"
       shift
       ;;
     --image-dir)
@@ -71,89 +35,109 @@ while [[ $# -gt 0 ]]; do
       usage
       exit 0
       ;;
-    -*)
-      echo "[ERROR] Invalid argument: $1" >&2
-      usage
-      exit 1
-      ;;
     *)
-      echo "[ERROR] Invalid argument: $1" >&2
-      usage
-      exit 1
+      build_list_file="$1"
+      shift
       ;;
   esac
 done
 
 : > "$build_list_file"
 
-function is_publishable_manifest() {
+function is_publishable() {
   local manifest="$1"
-  [[ -f "$manifest" ]] || return 1
-  
-  local publish
-  publish="$(yq e '.publish // false' "$manifest")"
-  [[ "$publish" == "true" ]]
+  [[ "$(yq e '.publish // false' "$manifest")" == "true" ]]
 }
 
-function manifest_to_dir() {
+function get_registry_ref() {
+  local manifest="$1"
+  local registry_path tag
+  registry_path="$(yq e '.registry_path' "$manifest")"
+  tag="$(yq e '.upstream.version' "$manifest")"
+  echo "${registry_path}:${tag}"
+}
+
+function manifest_dir() {
   dirname "$1"
 }
 
-if [[ "$force" == "true" ]]; then
-  if [[ -n "$image_dir" ]]; then
-    find "./$image_dir" -name image.yml -type f | sort | while IFS= read -r manifest; do
-      is_publishable_manifest "$manifest" || continue
-      manifest_to_dir "$manifest"
-    done | sort -u > "$build_list_file"
-  else
-    find . -name image.yml -type f | sort | while IFS= read -r manifest; do
-      is_publishable_manifest "$manifest" || continue
-      manifest_to_dir "$manifest"
-    done | sort -u > "$build_list_file"
-  fi
-else
-  changed_files_file="$(mktemp)"
-  trap 'rm -f "$changed_files_file"' EXIT
+function image_exists_remote() {
+  local ref="$1"
 
+  ## failure = treat as "does not exist"
+  docker buildx imagetools inspect "$ref" >/dev/null 2>&1
+}
+
+function changed_by_git() {
+  local manifest="$1"
+  local dockerfile context changed_file
+
+  dockerfile="$(yq e '.dockerfile // ""' "$manifest")"
+  context="$(yq e '.context // ""' "$manifest")"
+
+  grep -Fxq "$manifest" changed_files.txt && return 0
+  [[ -n "$dockerfile" ]] && grep -Fxq "$dockerfile" changed_files.txt && return 0
+
+  if [[ -n "$context" ]]; then
+    grep -Fxq "$context" changed_files.txt && return 0
+    grep -Fq "${context}/" changed_files.txt && return 0
+  fi
+
+  return 1
+}
+
+## Build changed files list
+changed_files_file="changed_files.txt"
+if [[ "$force" == "false" ]]; then
   if git rev-parse --verify HEAD >/dev/null 2>&1; then
-    git diff --name-only HEAD~1..HEAD > "$changed_files_file" 2>/dev/null || git ls-files > "$changed_files_file"
+    git diff --name-only HEAD~1..HEAD > "$changed_files_file" 2>/dev/null || true
   else
     git ls-files > "$changed_files_file"
   fi
+else
+  : > "$changed_files_file"
+fi
 
-  if [[ -n "$image_dir" ]]; then
-    search_root="./$image_dir"
-  else
-    search_root="."
+search_root="."
+[[ -n "$image_dir" ]] && search_root="./$image_dir"
+
+mapfile -t manifests < <(find "$search_root" -name image.yml -type f | sort)
+
+for manifest in "${manifests[@]}"; do
+(
+  set +e
+
+  is_publishable "$manifest" || exit 0
+
+  dir="$(manifest_dir "$manifest")"
+  registry_ref="$(get_registry_ref "$manifest")"
+
+  publish_reason=""
+
+  ## Force mode
+  if [[ "$force" == "true" ]]; then
+    echo "$dir"
+    exit 0
   fi
 
-  while IFS= read -r manifest; do
-    [[ -n "$manifest" ]] || continue
-    is_publishable_manifest "$manifest" || continue
+  ## First publish/new image
+  if ! image_exists_remote "$registry_ref"; then
+    publish_reason="first publish (missing remote image)"
+    echo "$dir"
+    exit 0
+  fi
 
-    dir="$(dirname "$manifest")"
-    dockerfile="$(yq e '.dockerfile // ""' "$manifest")"
-    context="$(yq e '.context // ""' "$manifest")"
+  ## Normal change detection
+  if changed_by_git "$manifest"; then
+    publish_reason="git changes detected"
+    echo "$dir"
+    exit 0
+  fi
 
-    if grep -Fxq "$manifest" "$changed_files_file"; then
-      echo "$dir"
-      continue
-    fi
-
-    [[ -n "$dockerfile" ]] && grep -Fxq "$dockerfile" "$changed_files_file" && { echo "$dir"; continue; }
-
-    if [[ -n "$context" ]]; then
-      if grep -Fxq "$context" "$changed_files_file"; then
-        echo "$dir"
-        continue
-      fi
-      if grep -Fq "${context}/" "$changed_files_file"; then
-        echo "$dir"
-        continue
-      fi
-    fi
-  done < <(find "$search_root" -name image.yml -type f | sort) | sort -u > "$build_list_file"
-fi
+) || {
+  echo "[WARN] failed processing $manifest"
+}
+done | sort -u > "$build_list_file"
 
 if [[ ! -s "$build_list_file" ]]; then
   echo "No containers to build."
