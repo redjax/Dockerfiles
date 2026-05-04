@@ -77,9 +77,8 @@ while [[ $# -gt 0 ]]; do
       exit 1
       ;;
     *)
-      echo "[ERROR] Invalid argument: $1" >&2
-      usage
-      exit 1
+      build_list_file="$1"
+      shift
       ;;
   esac
 done
