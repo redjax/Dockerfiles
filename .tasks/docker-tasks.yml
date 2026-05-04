@@ -1,6 +1,10 @@
 ---
 version: "3"
 
+vars:
+  REGISTRY: "{{.REGISTRY | default \"ghcr.io/redjax\"}}"
+  FORCE: "{{.FORCE | default \"false\"}}"
+
 tasks:
   detect-changes:
     desc: "Detect changed file compared to main branch"
@@ -11,8 +15,37 @@ tasks:
         trap 'rm -f /tmp/changed-files.txt' EXIT
 
         git fetch origin main
-        git diff --name-only origin/main...HEAD > /tmp/changed-files.txt
+        git diff --name-only origin/mainHEAD > /tmp/changed-files.txt
 
         echo
         echo "Changed files:"
         cat /tmp/changed-files.txt
+
+  get-build-targets:
+    desc: "Generate build list of images to build"
+    vars:
+      IMAGE_DIR: "{{.IMAGE_DIR | default \"\"}}"
+      FORCE: "{{.FORCE | default \"false\"}}"
+
+    cmds:
+      - |
+        set -euo pipefail
+
+        echo "Generating build list"
+        echo
+
+        ARGS=()
+
+        if [ -n "{{.IMAGE_DIR}}" ]; then
+          ARGS+=(--image-dir "{{.IMAGE_DIR}}")
+        fi
+
+        if [ "{{.FORCE}}" == "true" ]; then
+          ARGS+=(--force)
+        fi
+
+        ./scripts/build/determine-images-to-build.sh "${ARGS[@]}" build_list.txt
+
+        if [ ! -s build_list.txt ]; then
+          echo "Did not detect any images to build"
+        fi
