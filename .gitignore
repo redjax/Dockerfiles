@@ -2,6 +2,7 @@
 .env
 *.env
 env/*
+*.local
 *.local.*
 
 ## Allow rules

@@ -1,0 +1,26 @@
+---
+name: taskfile
+category: tooling
+description: Taskfile is a cross-platform, Make-inspired build tool.
+publish: true
+context: dockerfiles/automation/taskfile
+dockerfile: dockerfiles/automation/taskfile/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/taskfile
+components:
+  taskfile:
+    type: github_release
+    repo: go-task/task
+    track: v3
+    version: v3.50.0
+    arg: TASKFILE_VERSION
+upstream:
+  registry: docker
+  name: alpine
+  track: 3.23
+  version: 3.23.4
+version_args:
+  ALPINE_TAG: 3.23.4
+  TASKFILE_VERSION: v3.50.0
+args:
+  ALPINE_TAG: 3.23.4
+  TASKFILE_VERSION: v3.50.0

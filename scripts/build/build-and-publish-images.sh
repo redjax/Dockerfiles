@@ -15,6 +15,47 @@ build_list_file="build_list.txt"
 dry_run="${DRY_RUN:-false}"
 force="${FORCE:-false}"
 
+function usage() {
+  cat <<EOF
+Usage:
+  $0 [OPTIONS] [BUILD_LIST_FILE]
+
+Builds and publishes container images listed in a build list file.
+
+Each entry in the build list should be a directory containing an image.yml
+manifest. The script builds the image, compares its digest with the remote
+registry, and only pushes if the image has changed (unless --force is used).
+
+Arguments:
+  BUILD_LIST_FILE   File containing image directories to process (default: build_list.txt)
+
+Options:
+  --dry-run         Print build/publish steps without executing them
+  --force           Always publish images, skipping digest comparison
+  -f, --file PATH   Path to build list file (same as positional arg)
+  --file=PATH       Same as above
+  -h, --help        Show this help message
+
+Behavior:
+  - Skips entries without image.yml or with 'publish: false'
+  - Builds images using ./scripts/build/build-image.sh
+  - Tags images as:
+    - <registry_path>:<version>
+    - <registry_path>:latest
+    - <registry_path>:<git-sha>
+  - Compares local vs remote digests before pushing (unless --force)
+
+Environment:
+  DRY_RUN=true           Equivalent to --dry-run
+  FORCE=true             Equivalent to --force
+  GITHUB_SHA             Used for short SHA tagging (falls back to git)
+
+Notes:
+  - build list entries must be directories, not image.yml paths
+  - requires: docker, docker buildx, yq, jq, git
+EOF
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run)
@@ -57,12 +98,12 @@ if [[ ! -s "$build_list_file" ]]; then
   exit 0
 fi
 
-get_remote_digest() {
+function get_remote_digest() {
   local ref="$1"
   docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}' 2>/dev/null || true
 }
 
-get_local_digest() {
+function get_local_digest() {
   local image_ref="$1"
   docker image inspect "$image_ref" --format '{{index .RepoDigests 0}}' 2>/dev/null | awk -F@ '{print $2}' || true
 }
@@ -80,6 +121,7 @@ while IFS= read -r image_dir; do
   context="$(yq e '.context' "$manifest")"
   dockerfile="$(yq e '.dockerfile' "$manifest")"
   name="$(yq e '.name' "$manifest")"
+  description="$(yq e '.description' "$manifest")"
   registry_path="$(yq e '.registry_path' "$manifest")"
   tag="$(yq e '.upstream.version' "$manifest")"
 
@@ -112,7 +154,7 @@ while IFS= read -r image_dir; do
   echo "Building $name from $manifest"
 
   if [[ "$dry_run" == "true" ]]; then
-    echo "[DRY RUN] ./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --tag $tag ${build_args[*]}"
+    echo "[DRY RUN] ./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --description $description --tag $tag ${build_args[*]}"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${tag}"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:latest"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${short_sha}"
@@ -137,6 +179,7 @@ while IFS= read -r image_dir; do
     --dockerfile "$dockerfile" \
     --name "$name" \
     --tag "$tag" \
+    --description "$description" \
     "${build_args[@]}"
 
   local_digest="$(get_local_digest "${name}:${tag}")"

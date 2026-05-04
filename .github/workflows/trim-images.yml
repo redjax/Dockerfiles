@@ -19,6 +19,19 @@ on:
         default: 5
         type: number
 
+  workflow_call:
+    inputs:
+      apply:
+        description: "Apply changes (delete images when enabled. Disable for dry run)"
+        required: false
+        default: true
+        type: boolean
+      keep:
+        description: "Number of versions to retain (default: 5)"
+        required: false
+        default: 5
+        type: number
+
 permissions:
   contents: write
   packages: write

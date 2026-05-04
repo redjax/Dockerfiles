@@ -15,7 +15,7 @@ set -euo pipefail
 function usage() {
   cat <<'EOF'
 Usage:
-  build-image.sh --context PATH --dockerfile PATH --name NAME --tag TAG [--registry-prefix PREFIX] [--build-arg KEY=VAL ...]
+  build-image.sh --context PATH --dockerfile PATH --name NAME --tag TAG [--description DESCRIPTION] [--registry-prefix PREFIX] [--build-arg KEY=VAL ...]
 
 Examples:
   build-image.sh --context dockerfiles/base/alpine --dockerfile dockerfiles/base/alpine/Dockerfile --name alpine-base --tag 3.22.4
@@ -29,6 +29,7 @@ IMAGE_NAME=""
 IMAGE_TAG=""
 REGISTRY_PREFIX=""
 BUILD_ARGS=()
+DESCRIPTION=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -50,6 +51,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --registry-prefix)
       REGISTRY_PREFIX="$2"
+      shift 2
+      ;;
+    --description)
+      DESCRIPTION="$2"
       shift 2
       ;;
     --build-arg)
@@ -80,6 +85,6 @@ echo "Building ${FULL_IMAGE_NAME}:${IMAGE_TAG}"
 docker build \
   -f "$DOCKERFILE" \
   -t "${FULL_IMAGE_NAME}:${IMAGE_TAG}" \
+  --label "description=${DESCRIPTION}" \
   "${BUILD_ARGS[@]}" \
   "$CONTEXT"
-
