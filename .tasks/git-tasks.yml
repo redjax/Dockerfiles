@@ -4,11 +4,10 @@ version: "3"
 tasks:
   detect-changes:
     desc: "Detect changed file compared to main branch"
+    silent: true
     cmds:
       - |
         set -euo pipefail
-
-        trap 'rm -f /tmp/changed-files.txt' EXIT
 
         git fetch origin main
 

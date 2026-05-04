@@ -7,6 +7,7 @@ vars:
 tasks:
   get-build-targets:
     desc: "Generate build list of images to build"
+    silent: true
     vars:
       IMAGE_DIR: "{{.IMAGE_DIR | default \"\"}}"
       FORCE: "{{.FORCE | default \"false\"}}"
@@ -36,6 +37,7 @@ tasks:
 
   build-and-publish:
     desc: "Build and publish images from build list"
+    silent: true
     vars:
       DRY_RUN: "{{.DRY_RUN | default \"false\"}}"
       FORCE: "{{.FORCE | default \"false\"}}"
@@ -67,6 +69,7 @@ tasks:
   update-images:
     desc: "Update image.yml manifests based on upstream versions (like CI
       update-images workflow)"
+    silent: true
     vars:
       IMAGE: "{{.IMAGE | default \"\"}}"
       DRY_RUN: "{{.DRY_RUN | default \"false\"}}"
@@ -106,6 +109,7 @@ tasks:
 
   update-image-manifests:commit:
     desc: "Commit and push manifest updates (only if changes exist)"
+    silent: true
     cmds:
       - |
         set -euo pipefail
