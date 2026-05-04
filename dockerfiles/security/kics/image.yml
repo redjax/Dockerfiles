@@ -8,10 +8,12 @@ dockerfile: dockerfiles/security/kics/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/kics
 upstream:
   registry: docker
-  name: checkmarx/kics
-  track: 2.1
-  version: 2.1.20
+  name: alpine
+  track: 3.23
+  version: 3.23.4
 version_args:
+  ALPINE_TAG: 3.23.4
   KICS_TAG: 2.1.20
 args:
+  ALPINE_TAG: 3.23.4
   KICS_TAG: 2.1.20
