@@ -133,8 +133,10 @@ current="$(yq e '.upstream.version' "$FILE")"
 latest="$(get_latest_version "$registry" "$name" "$track")"
 
 if [[ -z "${latest:-}" ]]; then
-  echo "[ERROR] No tags found for $registry/$name ($track)" >&2
-  exit 1
+  echo "[WARN] No tags found for $registry/$name ($track)"
+  echo "[INFO] Assuming new image or new track; leaving version unchanged"
+
+  latest="$current"
 fi
 
 ## Detect whether update is needed
