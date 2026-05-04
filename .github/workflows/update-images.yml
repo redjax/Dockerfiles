@@ -1,10 +1,9 @@
----
 ############################################
 # Scan repository for image.yml manifests  #
 # and check for updated upstream versions. #
 #                                          #
-# Path the image.yml & Dockerfile on new   #
-# upstream versions.                       #
+# Patch image.yml & Dockerfile on upstream #
+# version changes.                         #
 ############################################
 
 name: Update image manifests
@@ -46,23 +45,27 @@ permissions:
   contents: write
 
 jobs:
-  update:
+  plan:
     runs-on: ubuntu-latest
 
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+      dry_run: ${{ steps.meta.outputs.dry_run }}
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
 
-      - name: Install yq
-        uses: mikefarah/yq@v4.53.2
+      - uses: mikefarah/yq@v4.53.2
 
-      - name: Configure git
+      - name: Normalize inputs
+        id: meta
+        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
+          echo "dry_run=${{ inputs.dry_run || false }}" >> $GITHUB_OUTPUT
 
       - name: Find image manifests
         shell: bash
@@ -77,32 +80,31 @@ jobs:
             find . -name image.yml -type f | sort > manifests.txt
           fi
 
-          if [[ ! -s manifests.txt ]]; then
-            echo "No image manifests found."
-            exit 0
-          fi
+          [[ -s manifests.txt ]] || exit 0
 
-      - name: Update manifests and Dockerfiles
+      - name: Update manifests
         shell: bash
         run: |
           set -euo pipefail
 
           DRY_RUN="${{ inputs.dry_run || false }}"
 
+          [[ -s manifests.txt ]] || exit 0
+
           while IFS= read -r manifest; do
             [[ -n "$manifest" ]] || continue
 
-            echo "Processing $manifest"
-
-            if [[ "${DRY_RUN}" == "true" ]]; then
-              output="$(./scripts/update/bump-image-manifest.sh --file "$manifest" --dry-run)"
-            else
-              output="$(./scripts/update/bump-image-manifest.sh --file "$manifest")"
-            fi
-            
-            echo "$output"
-
+            ./scripts/update/bump-image-manifest.sh \
+              --file "$manifest" \
+              $([[ "$DRY_RUN" == "true" ]] && echo "--dry-run")
           done < manifests.txt
+
+      - name: Create diff artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git diff > changes.patch || true
 
       - name: Detect changes
         id: changes
@@ -110,24 +112,54 @@ jobs:
         run: |
           set -euo pipefail
 
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat
+          fi
+
+      - name: Upload patch
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: image-updates
+          path: changes.patch
+
+  commit:
+    runs-on: ubuntu-latest
+    needs: plan
+    if: needs.plan.outputs.changed == 'true' && needs.plan.outputs.dry_run != 'true'
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Download patch
+        uses: actions/download-artifact@v7
+        with:
+          name: image-updates
+
+      - name: Apply patch
+        run: |
+          set -euo pipefail
+          git apply changes.patch
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push
+        run: |
           git add -A
 
           if git diff --cached --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No changes detected"
+            echo "Nothing to commit"
             exit 0
           fi
 
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-          git diff --stat
-
-      - name: Show diff
-        if: steps.changes.outputs.changed == 'true' && inputs.dry_run == true
-        run: |
-          git diff --unified=3
-
-      - name: Commit and push
-        if: steps.changes.outputs.changed == 'true' && inputs.dry_run != true
-        run: |
           git commit -m "chore: update image manifests and dockerfile args"
           git push
