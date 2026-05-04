@@ -1,0 +1,33 @@
+---
+
+################################################
+# Taskfile tasks for Github container registry #
+################################################
+
+version: "3"
+
+tasks:
+  ## Trim old container images
+  trim-images:
+    desc: "Trim old container images in the Github container registry"
+    vars:
+      APPLY: "{{.APPLY | default \"false\"}}"
+      KEEP: "{{.KEEP | default \"5\"}}"
+
+    env:
+      GH_TOKEN: "{{.GH_TOKEN}}"
+
+    cmds:
+      - |
+        set -euo pipefail
+
+        echo "Running trim-images with apply={{.APPLY}}, keep={{.KEEP}}"
+
+        if [[ "{{.APPLY}}" == "true" ]]; then
+          ./scripts/cleanup/trim-ghcr-images.sh --apply --keep "{{.KEEP}}"
+        else
+          ./scripts/cleanup/trim-ghcr-images.sh --keep "{{.KEEP}}"
+
+          echo ""
+          echo "[DRY RUN] No images were deleted. Run this task again with -- --apply to remove the images listed above as 'delete'"
+        fi
