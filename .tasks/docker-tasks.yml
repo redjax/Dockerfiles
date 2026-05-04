@@ -1,0 +1,152 @@
+---
+version: "3"
+
+vars:
+  REGISTRY: "{{.REGISTRY | default \"ghcr.io/redjax\"}}"
+
+tasks:
+  get-build-targets:
+    desc: "Generate build list of images to build"
+    silent: true
+    vars:
+      IMAGE_DIR: "{{.IMAGE_DIR | default \"\"}}"
+      FORCE: "{{.FORCE | default \"false\"}}"
+
+    cmds:
+      - |
+        set -euo pipefail
+
+        echo "Generating build list"
+        echo
+
+        ARGS=()
+
+        if [ -n "{{.IMAGE_DIR}}" ]; then
+          ARGS+=(--image-dir "{{.IMAGE_DIR}}")
+        fi
+
+        if [ "{{.FORCE}}" == "true" ]; then
+          ARGS+=(--force)
+        fi
+
+        ./scripts/build/determine-images-to-build.sh "${ARGS[@]}" build_list.txt
+
+        if [ ! -s build_list.txt ]; then
+          echo "Did not detect any images to build"
+        fi
+
+  build-and-publish:
+    desc: "Build and publish images from build list"
+    silent: true
+    vars:
+      DRY_RUN: "{{.DRY_RUN | default \"false\"}}"
+      FORCE: "{{.FORCE | default \"false\"}}"
+      PUBLISH: "{{.PUBLISH | default \"false\"}}"
+
+    deps:
+      - get-build-targets
+
+    cmds:
+      - |
+        set -euo pipefail
+
+        ARGS=()
+
+        if [ "{{.DRY_RUN}}" = "true" ]; then
+          ARGS+=(--dry-run)
+        fi
+
+        if [ "{{.FORCE}}" = "true" ]; then
+          ARGS+=(--force)
+        fi
+
+        if [[ "{{.PUBLISH}}" = "true" ]]; then
+          ARGS+=(--publish)
+        fi
+
+        ./scripts/build/build-and-publish-images.sh "${ARGS[@]}" build_list.txt
+
+  update-images:
+    desc: "Update image.yml manifests based on upstream versions (like CI
+      update-images workflow)"
+    silent: true
+    vars:
+      IMAGE: "{{.IMAGE | default \"\"}}"
+      DRY_RUN: "{{.DRY_RUN | default \"false\"}}"
+
+    cmds:
+      - |
+        set -euo pipefail
+
+        echo "Finding image manifests"
+
+        : > manifests.txt
+
+        if [ -n "{{.IMAGE}}" ]; then
+          find "./{{.IMAGE}}" -name image.yml -type f | sort > manifests.txt
+        else
+          find . -name image.yml -type f | sort > manifests.txt
+        fi
+
+        if [[ ! -s manifests.txt ]]; then
+          echo "No manifests found"
+          exit 0
+        fi
+
+        echo "Updating manifests"
+        echo
+
+        while IFS= read -r manifest; do
+          [[ -n "$manifest" ]] || continue
+
+          ./scripts/update/bump-image-manifest.sh \
+            --file "$manifest" \
+            $([[ "{{.DRY_RUN}}" == "true" ]] && echo "--dry-run")
+        done < manifests.txt
+
+        echo
+        echo "Done updating manifests"
+
+  update-image-manifests:commit:
+    desc: "Commit and push manifest updates (only if changes exist)"
+    silent: true
+    cmds:
+      - |
+        set -euo pipefail
+
+        if git diff --quiet; then
+          echo "No changes to commit"
+          exit 0
+        fi
+
+        echo "Staging changes"
+        git add -A
+
+        if git diff --cached --quiet; then
+          echo "Nothing staged"
+          exit 0
+        fi
+
+        git commit -m "chore: update image manifests and dockerfile args"
+        git push
+
+  audit-versions:
+    desc: "Run the check-for-updates.sh script to audit versions, including upstream
+      Docker tags & software versions"
+    silent: true
+    vars:
+      GITHUB_TOKEN: "{{.GITHUB_TOKEN | default \"\"}}"
+      SCAN_PATH: "{{.SCAN_PATH | default \"\"}}"
+    cmds:
+      - |
+        set -euo pipefail
+
+        export GITHUB_TOKEN="{{.GITHUB_TOKEN}}"
+
+        ARGS=()
+
+        if [[ -n "{{.SCAN_PATH}}" ]]; then
+          ARGS+=(--path "{{.SCAN_PATH}}")
+        fi
+
+        ./scripts/update/check-for-updates.sh "${ARGS[@]}"

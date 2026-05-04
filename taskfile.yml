@@ -1,0 +1,18 @@
+---
+version: "3"
+
+includes:
+  ## Github container registry tasks
+  ghcr:
+    taskfile: .tasks/ghcr-tasks.yml
+    dir: .
+
+  ## Docker tasks (build, publish, update manifest, etc)
+  docker:
+    taskfile: .tasks/docker-tasks.yml
+    dir: .
+
+  ## Git tasks
+  git:
+    taskfile: .tasks/git-tasks.yml
+    dir: .
