@@ -3,8 +3,8 @@ name: kics
 category: security
 description: checkmarx/kics container image with pinned version.
 publish: true
-context: tools/security/kics
-dockerfile: tools/security/kics/Dockerfile
+context: dockerfiles/security/kics
+dockerfile: dockerfiles/security/kics/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/kics
 upstream:
   registry: docker
