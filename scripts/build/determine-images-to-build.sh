@@ -14,6 +14,40 @@ build_list_file="${build_list.txt}"
 force="${FORCE:-false}"
 image_dir="${IMAGE_DIR:-}"
 
+function usage() {
+  cat <<EOF
+Usage:
+  $0 [OPTIONS] [OUTPUT_FILE]
+
+Scans the repository for image.yml manifests and writes a list of image
+directories that should be built.
+
+By default, only images affected by recent git changes are included.
+Use --force to include all publishable images.
+
+Arguments:
+  OUTPUT_FILE            Path to write the build list (default: build_list.txt)
+
+Options:
+  --force                Include all publishable images (ignore git changes)
+
+  -f, --file PATH        Output file for build list (same as positional arg)
+  --file=PATH            Same as above
+
+  --image-dir PATH       Limit scan to a specific subdirectory
+
+  -h, --help             Show this help message
+
+Notes:
+  - Only manifests with 'publish: true' are considered
+  - Output contains directories, not image.yml file paths
+  - Change detection includes:
+    - image.yml changes
+    - Dockerfile changes
+    - build context changes
+EOF
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --force)
@@ -36,13 +70,19 @@ while [[ $# -gt 0 ]]; do
       image_dir="${1#*=}"
       shift
       ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
     -*)
-      echo "[ERROR] Unknown option: $1" >&2
+      echo "[ERROR] Invalid argument: $1" >&2
+      usage
       exit 1
       ;;
     *)
-      build_list_file="$1"
-      shift
+      echo "[ERROR] Invalid argument: $1" >&2
+      usage
+      exit 1
       ;;
   esac
 done
@@ -52,6 +92,7 @@ done
 function is_publishable_manifest() {
   local manifest="$1"
   [[ -f "$manifest" ]] || return 1
+  
   local publish
   publish="$(yq e '.publish // false' "$manifest")"
   [[ "$publish" == "true" ]]
