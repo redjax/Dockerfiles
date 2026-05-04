@@ -25,6 +25,8 @@ source "${LIB_DIR}/gitlab.sh"
 source "${LIB_DIR}/acr.sh"
 source "${LIB_DIR}/gh-release.sh"
 
+GH_TOKEN="${GITHUB_TOKEN:-}"
+
 ## Print usage details for optional script arguments
 function usage() {
   cat <<EOF
@@ -32,9 +34,10 @@ Usage:
   $0 [OPTIONS]
 
 Options:
-  --summary    Print shorter output
-  --path PATH  Limit scan to a subdirectory
-  -h, --help   Show this help menu
+  --summary            Print shorter output
+  --path PATH          Limit scan to a subdirectory
+  --github-token TOKEN GitHub token (or set GITHUB_TOKEN env var)
+  -h, --help           Show this help menu
 EOF
 }
 
@@ -52,6 +55,14 @@ while [[ $# -gt 0 ]]; do
     --path)
       SCAN_PATH="$2"
       shift 2
+      ;;
+    --github-token)
+      GH_TOKEN="$2"
+      shift 2
+      ;;
+    --github-token=*)
+      GH_TOKEN="${1#*=}"
+      shift
       ;;
     -h|--help)
       usage

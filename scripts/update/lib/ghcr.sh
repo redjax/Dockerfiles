@@ -3,7 +3,7 @@
 function ghcr_get_token() {
   local name="$1"
   local ghcr_username="${GHCR_USERNAME:-}"
-  local ghcr_token="${GHCR_TOKEN:-}"
+  local ghcr_token="${GHCR_TOKEN:-${GH_TOKEN:-}}"
   local token_url="https://ghcr.io/token?service=ghcr.io&scope=repository:${name}:pull"
 
   if [[ -n "$ghcr_username" && -n "$ghcr_token" ]]; then

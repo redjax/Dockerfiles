@@ -41,19 +41,20 @@ GH_API_URL="${GH_API_URL:-https://api.github.com}"
 APPLY="false"
 
 function usage() {
-  echo ""
-  echo "Usage: $0 [OPTIONS]"
-  echo "Description:"
-  echo "  Scans container registry and removes all tags older than the most recent N,"
-  echo "  where N is the value of --keep (default: 5)."
-  echo ""
-  echo "  By default, no action is taken, you must pass --apply to delete images."
-  echo ""
-  echo "Options:"
-  echo "  --apply     Apply the changes (delete old images)"
-  echo "  --keep N    Retain the most recent N images (default: 5)"
-  echo "  -h, --help  Print this help menu"
-  echo ""
+  cat <<EOF
+
+Usage: $0 [OPTIONS]
+
+Description:
+  Removes old GHCR container versions, keeping the most recent N.
+
+Options:
+  --apply               Delete old images (default: dry-run)
+  --keep N              Retain N most recent versions (default: 5)
+  --github-token TOKEN  GitHub token (or set GITHUB_TOKEN env var)
+  -h, --help            Show this help menu
+
+EOF
 }
 
 while [[ $# -gt 0 ]]; do
@@ -69,6 +70,14 @@ while [[ $# -gt 0 ]]; do
     --keep)
       KEEP_VERSIONS="$2"
       shift 2
+      ;;
+    --github-token)
+      GH_TOKEN="$2"
+      shift 2
+      ;;
+    --github-token=*)
+      GH_TOKEN="${1#*=}"
+      shift
       ;;
     *)
       echo "Unknown option: $1"
