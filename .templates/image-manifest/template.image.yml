@@ -1,0 +1,33 @@
+---
+name: container-name
+category: example
+description: >
+  Description for the container. This is injected into the container as a label.
+publish: true
+context: dockerfiles/category/container_name
+dockerfile: dockerfiles/category/container_name/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/container-name
+components:
+  tflint:
+    type: github_release
+    repo: terraform-linters/tflint
+    track: vX.XX
+    version: vX.XX.X
+    arg: TFLINT_VERSION
+  terraform:
+    type: dockerhub
+    name: hashicorp/terraform
+    track: X.XX
+    version: X.XX.X
+    arg: TERRAFORM_TAG
+upstream:
+  registry: docker
+  name: hashicorp/terraform
+  track: X.XX
+  version: X.XX
+version_args:
+  TERRAFORM_TAG: X.XX.X
+  TFLINT_VERSION: vX.XX.X
+args:
+  TERRAFORM_TAG: X.XX.X
+  TFLINT_VERSION: vX.XX.X
