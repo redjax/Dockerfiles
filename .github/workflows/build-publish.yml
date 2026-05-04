@@ -22,17 +22,17 @@ on:
         required: false
         type: string
       dry_run:
-        description: "Describe actions without taking them"
+        description: "Dry run - describe actions without taking them"
         required: false
         default: false
         type: boolean
       force:
-        description: "Force-add all containers for processing"
+        description: "Force - Find all images, regardless of change status"
         required: false
         default: false
         type: boolean
       enable_publish:
-        description: "Enable/disable publishing to container registry"
+        description: "Publish - enable/disable publishing to container registry"
         required: false
         default: false
         type: boolean
