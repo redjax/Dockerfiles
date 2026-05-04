@@ -10,7 +10,7 @@ set -euo pipefail
 # --force is used.                              #
 #################################################
 
-build_list_file="${build_list.txt}"
+build_list_file="build_list.txt"
 force="${FORCE:-false}"
 image_dir="${IMAGE_DIR:-}"
 
