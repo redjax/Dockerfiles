@@ -63,3 +63,65 @@ tasks:
         fi
 
         ./scripts/build/build-and-publish-images.sh "${ARGS[@]}" build_list.txt
+
+  update-images:
+    desc: "Update image.yml manifests based on upstream versions (like CI
+      update-images workflow)"
+    vars:
+      IMAGE: "{{.IMAGE | default \"\"}}"
+      DRY_RUN: "{{.DRY_RUN | default \"false\"}}"
+
+    cmds:
+      - |
+        set -euo pipefail
+
+        echo "Finding image manifests"
+
+        : > manifests.txt
+
+        if [ -n "{{.IMAGE}}" ]; then
+          find "./{{.IMAGE}}" -name image.yml -type f | sort > manifests.txt
+        else
+          find . -name image.yml -type f | sort > manifests.txt
+        fi
+
+        if [[ ! -s manifests.txt ]]; then
+          echo "No manifests found"
+          exit 0
+        fi
+
+        echo "Updating manifests"
+        echo
+
+        while IFS= read -r manifest; do
+          [[ -n "$manifest" ]] || continue
+
+          ./scripts/update/bump-image-manifest.sh \
+            --file "$manifest" \
+            $([[ "{{.DRY_RUN}}" == "true" ]] && echo "--dry-run")
+        done < manifests.txt
+
+        echo
+        echo "Done updating manifests"
+
+  update-image-manifests:commit:
+    desc: "Commit and push manifest updates (only if changes exist)"
+    cmds:
+      - |
+        set -euo pipefail
+
+        if git diff --quiet; then
+          echo "No changes to commit"
+          exit 0
+        fi
+
+        echo "Staging changes"
+        git add -A
+
+        if git diff --cached --quiet; then
+          echo "Nothing staged"
+          exit 0
+        fi
+
+        git commit -m "chore: update image manifests and dockerfile args"
+        git push
