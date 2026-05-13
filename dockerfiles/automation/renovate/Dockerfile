@@ -3,7 +3,8 @@ ARG RENOVATE_TAG=43.176.4-full
 
 FROM renovate/renovate:${RENOVATE_TAG}
 
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     git \
     jq \
-    bash
+    bash \
+ && rm -rf /var/lib/apt/lists/*
