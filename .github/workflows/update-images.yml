@@ -18,8 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: "Optional path to a single image directory, e.g.
-          dockerfiles/base/alpine"
+        description: "Optional path to a single image directory, e.g. dockerfiles/base/alpine"
         required: false
         type: string
       dry_run:
@@ -49,14 +48,15 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      changed: ${{ steps.changes.outputs.changed }}
+      changed: ${{ steps.detect.outputs.changed }}
+      base_sha: ${{ steps.meta.outputs.base_sha }}
       dry_run: ${{ steps.meta.outputs.dry_run }}
 
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.sha }}
 
       - uses: mikefarah/yq@v4.53.2
 
@@ -65,7 +65,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "dry_run=${{ inputs.dry_run || false }}" >> $GITHUB_OUTPUT
+
+          echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "dry_run=${{ inputs.dry_run || false }}" >> "$GITHUB_OUTPUT"
 
       - name: Find image manifests
         shell: bash
@@ -82,49 +84,46 @@ jobs:
 
           [[ -s manifests.txt ]] || exit 0
 
-      - name: Update manifests
+      - name: Detect updated images
+        id: detect
         shell: bash
         run: |
           set -euo pipefail
 
-          DRY_RUN="${{ inputs.dry_run || false }}"
+          : > changed_images.txt
 
           [[ -s manifests.txt ]] || exit 0
 
           while IFS= read -r manifest; do
             [[ -n "$manifest" ]] || continue
 
+            before=$(mktemp)
+
+            cp "$manifest" "$before"
+
             ./scripts/update/bump-image-manifest.sh \
               --file "$manifest" \
-              $([[ "$DRY_RUN" == "true" ]] && echo "--dry-run")
+              --dry-run
+
+            if ! diff -q "$before" "$manifest" >/dev/null; then
+              dirname "$manifest" >> changed_images.txt
+            fi
           done < manifests.txt
 
-      - name: Create diff artifact
-        shell: bash
-        run: |
-          set -euo pipefail
+          sort -u -o changed_images.txt changed_images.txt || true
 
-          git diff > changes.patch || true
-
-      - name: Detect changes
-        id: changes
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if git diff --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
+          if [[ -s changed_images.txt ]]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
-            git diff --stat
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload patch
-        if: steps.changes.outputs.changed == 'true'
+      - name: Upload changed image list
+        if: steps.detect.outputs.changed == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: image-updates
-          path: changes.patch
+          name: changed-images
+          path: changed_images.txt
 
   commit:
     runs-on: ubuntu-latest
@@ -135,17 +134,33 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref }}
+          ref: ${{ needs.plan.outputs.base_sha }}
 
-      - name: Download patch
-        uses: actions/download-artifact@v7
+      - name: Download changed images
+        uses: actions/download-artifact@v8
         with:
-          name: image-updates
+          name: changed-images
 
-      - name: Apply patch
+      - name: Re-run image updates
+        shell: bash
         run: |
           set -euo pipefail
-          git apply changes.patch
+
+          if [[ ! -f changed_images.txt ]]; then
+            echo "No changed images"
+            exit 0
+          fi
+
+          while IFS= read -r dir; do
+            [[ -n "$dir" ]] || continue
+
+            find "$dir" -name image.yml -type f | while read -r manifest; do
+              echo "Updating $manifest"
+
+              ./scripts/update/bump-image-manifest.sh \
+                --file "$manifest"
+            done
+          done < changed_images.txt
 
       - name: Configure git
         run: |
@@ -153,7 +168,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Commit and push
+        shell: bash
         run: |
+          set -euo pipefail
+
           git add -A
 
           if git diff --cached --quiet; then
@@ -161,5 +179,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore: update image manifests and dockerfile args"
+          git commit -m "chore: update image manifests"
           git push
