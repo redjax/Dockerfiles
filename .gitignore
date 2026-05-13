@@ -13,3 +13,4 @@ env/*
 manifests.txt
 build_list.txt
 changes.patch
+changed_images.txt
