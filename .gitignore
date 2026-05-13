@@ -12,3 +12,4 @@ env/*
 ## CI/CD
 manifests.txt
 build_list.txt
+changes.patch
