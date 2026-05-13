@@ -10,7 +10,7 @@ name: Build and publish images
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - "**/image.yml"
       - "**/Dockerfile"
@@ -47,6 +47,11 @@ on:
         type: boolean
       force:
         required: false
+        type: boolean
+      enable_publish:
+        description: "Publish - enable/disable publishing to container registry"
+        required: false
+        default: false
         type: boolean
 
 permissions:
