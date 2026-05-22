@@ -12,3 +12,6 @@ env/*
 ## CI/CD
 manifests.txt
 build_list.txt
+changed_files.txt
+changes.patch
+changed_images.txt
