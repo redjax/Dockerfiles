@@ -101,9 +101,12 @@ jobs:
 
             cp "$manifest" "$before"
 
-            ./scripts/update/bump-image-manifest.sh \
-              --file "$manifest" \
-              --dry-run
+            args=(--file "$manifest")
+            if [[ "${{ steps.meta.outputs.dry_run }}" == "true" ]]; then
+              args+=(--dry-run)
+            fi
+
+            ./scripts/update/bump-image-manifest.sh "${args[@]}"
 
             if ! diff -q "$before" "$manifest" >/dev/null; then
               dirname "$manifest" >> changed_images.txt
