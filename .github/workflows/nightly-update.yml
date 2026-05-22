@@ -11,6 +11,13 @@ name: Nightly image update
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run - preview changes without committing"
+        required: false
+        default: false
+        type: boolean
+
   schedule:
     - cron: "0 3 * * *"
 
@@ -21,6 +28,8 @@ permissions:
 jobs:
   update:
     uses: ./.github/workflows/update-images.yml
+    with:
+      dry_run: ${{ inputs.dry_run || false }}
     secrets: inherit
 
   build_publish:
@@ -28,10 +37,4 @@ jobs:
     uses: ./.github/workflows/build-publish.yml
     with:
       enable_publish: true
-    secrets: inherit
-
-  trim_images:
-    ## Run after the manifest update & build/publish stages
-    needs: [update, build_publish]
-    uses: ./.github/workflows/trim-images.yml
     secrets: inherit
