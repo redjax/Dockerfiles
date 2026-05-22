@@ -6,6 +6,12 @@
 name: Trim old container images
 
 on:
+  workflow_run:
+    workflows:
+      - Build and publish images
+    types:
+      - completed
+
   workflow_dispatch:
     inputs:
       apply:
@@ -13,6 +19,7 @@ on:
         required: false
         default: true
         type: boolean
+
       keep:
         description: "Number of versions to retain (default: 5)"
         required: false
@@ -26,6 +33,7 @@ on:
         required: false
         default: true
         type: boolean
+
       keep:
         description: "Number of versions to retain (default: 5)"
         required: false
@@ -38,6 +46,11 @@ permissions:
 
 jobs:
   trim:
+    ## Run only after successful build workflow completion
+    if: |
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.conclusion == 'success'
+
     runs-on: ubuntu-latest
 
     steps:

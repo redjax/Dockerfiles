@@ -1,3 +1,4 @@
+---
 ############################################
 # Scan repository for image.yml manifests  #
 # and check for updated upstream versions. #
@@ -21,6 +22,7 @@ on:
         description: "Optional path to a single image directory, e.g. dockerfiles/base/alpine"
         required: false
         type: string
+
       dry_run:
         description: "Dry run - preview changes without committing"
         required: false
@@ -32,6 +34,7 @@ on:
       image:
         required: false
         type: string
+
       dry_run:
         required: false
         type: boolean
@@ -45,11 +48,13 @@ permissions:
 
 jobs:
   plan:
+    ## Skip runs on draft PR
+    if: >
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
-
     outputs:
       changed: ${{ steps.detect.outputs.changed }}
-      base_sha: ${{ steps.meta.outputs.base_sha }}
       dry_run: ${{ steps.meta.outputs.dry_run }}
 
     steps:
@@ -66,7 +71,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          echo "base_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           echo "dry_run=${{ inputs.dry_run || false }}" >> "$GITHUB_OUTPUT"
 
       - name: Find image manifests
@@ -101,9 +105,13 @@ jobs:
 
             cp "$manifest" "$before"
 
-            ./scripts/update/bump-image-manifest.sh \
-              --file "$manifest" \
-              --dry-run
+            args=(--file "$manifest")
+
+            if [[ "${{ steps.meta.outputs.dry_run }}" == "true" ]]; then
+              args+=(--dry-run)
+            fi
+
+            ./scripts/update/bump-image-manifest.sh "${args[@]}"
 
             if ! diff -q "$before" "$manifest" >/dev/null; then
               dirname "$manifest" >> changed_images.txt
@@ -118,49 +126,35 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload changed image list
-        if: steps.detect.outputs.changed == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: changed-images
-          path: changed_images.txt
-
   commit:
     runs-on: ubuntu-latest
     needs: plan
-    if: needs.plan.outputs.changed == 'true' && needs.plan.outputs.dry_run != 'true'
+    ## Skip on draft PRs, or when no changed outputs are detected,
+    #  or on dry runs
+    if: >
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false) &&
+      needs.plan.outputs.changed == 'true' &&
+      needs.plan.outputs.dry_run != 'true'
 
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: ${{ needs.plan.outputs.base_sha }}
-
-      - name: Download changed images
-        uses: actions/download-artifact@v8
-        with:
-          name: changed-images
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GH_ACTIONS_PAT }}
 
       - name: Re-run image updates
         shell: bash
         run: |
           set -euo pipefail
 
-          if [[ ! -f changed_images.txt ]]; then
-            echo "No changed images"
-            exit 0
-          fi
+          find . -name image.yml -type f | while read -r manifest; do
+            echo "Updating $manifest"
 
-          while IFS= read -r dir; do
-            [[ -n "$dir" ]] || continue
-
-            find "$dir" -name image.yml -type f | while read -r manifest; do
-              echo "Updating $manifest"
-
-              ./scripts/update/bump-image-manifest.sh \
-                --file "$manifest"
-            done
-          done < changed_images.txt
+            ./scripts/update/bump-image-manifest.sh \
+              --file "$manifest"
+          done
 
       - name: Configure git
         run: |

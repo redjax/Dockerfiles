@@ -21,16 +21,19 @@ on:
         description: "Optional path to a single image directory"
         required: false
         type: string
+
       dry_run:
         description: "Dry run - describe actions without taking them"
         required: false
         default: false
         type: boolean
+
       force:
         description: "Force - Find all images, regardless of change status"
         required: false
         default: false
         type: boolean
+
       enable_publish:
         description: "Publish - enable/disable publishing to container registry"
         required: false
@@ -42,12 +45,15 @@ on:
       image:
         required: false
         type: string
+
       dry_run:
         required: false
         type: boolean
+
       force:
         required: false
         type: boolean
+
       enable_publish:
         description: "Publish - enable/disable publishing to container registry"
         required: false
@@ -60,8 +66,11 @@ permissions:
 
 jobs:
   plan:
+    ## Skip runs on draft PR
+    if: >
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-
     outputs:
       empty: ${{ steps.buildlist.outputs.empty }}
       dry_run: ${{ steps.meta.outputs.dry_run }}
@@ -86,6 +95,8 @@ jobs:
           DRY_RUN="${{ inputs.dry_run || false }}"
           FORCE="${{ inputs.force || false }}"
           IMAGE="${{ inputs.image || '' }}"
+
+          ## When ENABLE_PUBLISH is 'true', changed containers will re-publish to the container registry. 
           ENABLE_PUBLISH="${{ inputs.enable_publish || false }}"
 
           echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
@@ -99,9 +110,9 @@ jobs:
           set -euo pipefail
 
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            git diff --name-only HEAD~1 HEAD > changed_files.txt || true
+            git diff --name-only HEAD~1 HEAD > build_list.txt || true
           else
-            : > changed_files.txt
+            : > build_list.txt
           fi
 
       - name: Determine images to build
@@ -113,10 +124,16 @@ jobs:
           chmod +x ./scripts/build/determine-images-to-build.sh
 
           ARGS=()
-          [[ -n "${{ steps.meta.outputs.image }}" ]] && ARGS+=(--image-dir "${{ steps.meta.outputs.image }}")
-          [[ "${{ steps.meta.outputs.force }}" == "true" ]] && ARGS+=(--force)
 
-          ./scripts/build/determine-images-to-build.sh "${ARGS[@]}" build_list.txt
+          [[ -n "${{ steps.meta.outputs.image }}" ]] && \
+            ARGS+=(--image-dir "${{ steps.meta.outputs.image }}")
+
+          [[ "${{ steps.meta.outputs.force }}" == "true" ]] && \
+            ARGS+=(--force)
+
+          ./scripts/build/determine-images-to-build.sh \
+            "${ARGS[@]}" \
+            build_list.txt
 
           if [[ -s build_list.txt ]]; then
             echo "empty=false" >> $GITHUB_OUTPUT
@@ -133,7 +150,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: plan
-    if: needs.plan.outputs.empty == 'false'
+    ## Skip runs on draft PR,
+    #  or when no changes are detected
+    if: >
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.draft == false)
+      && needs.plan.outputs.empty == 'false'
 
     steps:
       - uses: actions/checkout@v6
@@ -162,8 +184,16 @@ jobs:
           chmod +x ./scripts/build/build-and-publish-images.sh
 
           ARGS=()
-          [[ "${{ needs.plan.outputs.dry_run }}" == "true" ]] && ARGS+=(--dry-run)
-          [[ "${{ needs.plan.outputs.force }}" == "true" ]] && ARGS+=(--force)
-          [[ "${{ needs.plan.outputs.enable_publish }}" == "true" ]] && ARGS+=(--publish)
 
-          ./scripts/build/build-and-publish-images.sh "${ARGS[@]}" build_list.txt
+          [[ "${{ needs.plan.outputs.dry_run }}" == "true" ]] && \
+            ARGS+=(--dry-run)
+
+          [[ "${{ needs.plan.outputs.force }}" == "true" ]] && \
+            ARGS+=(--force)
+
+          [[ "${{ needs.plan.outputs.enable_publish }}" == "true" ]] && \
+            ARGS+=(--publish)
+
+          ./scripts/build/build-and-publish-images.sh \
+            "${ARGS[@]}" \
+            build_list.txt
