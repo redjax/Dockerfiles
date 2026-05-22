@@ -21,16 +21,19 @@ on:
         description: "Optional path to a single image directory"
         required: false
         type: string
+
       dry_run:
         description: "Dry run - describe actions without taking them"
         required: false
         default: false
         type: boolean
+
       force:
         description: "Force - Find all images, regardless of change status"
         required: false
         default: false
         type: boolean
+
       enable_publish:
         description: "Publish - enable/disable publishing to container registry"
         required: false
@@ -42,12 +45,15 @@ on:
       image:
         required: false
         type: string
+
       dry_run:
         required: false
         type: boolean
+
       force:
         required: false
         type: boolean
+
       enable_publish:
         description: "Publish - enable/disable publishing to container registry"
         required: false
@@ -113,10 +119,16 @@ jobs:
           chmod +x ./scripts/build/determine-images-to-build.sh
 
           ARGS=()
-          [[ -n "${{ steps.meta.outputs.image }}" ]] && ARGS+=(--image-dir "${{ steps.meta.outputs.image }}")
-          [[ "${{ steps.meta.outputs.force }}" == "true" ]] && ARGS+=(--force)
 
-          ./scripts/build/determine-images-to-build.sh "${ARGS[@]}" build_list.txt
+          [[ -n "${{ steps.meta.outputs.image }}" ]] && \
+            ARGS+=(--image-dir "${{ steps.meta.outputs.image }}")
+
+          [[ "${{ steps.meta.outputs.force }}" == "true" ]] && \
+            ARGS+=(--force)
+
+          ./scripts/build/determine-images-to-build.sh \
+            "${ARGS[@]}" \
+            build_list.txt
 
           if [[ -s build_list.txt ]]; then
             echo "empty=false" >> $GITHUB_OUTPUT
@@ -162,8 +174,16 @@ jobs:
           chmod +x ./scripts/build/build-and-publish-images.sh
 
           ARGS=()
-          [[ "${{ needs.plan.outputs.dry_run }}" == "true" ]] && ARGS+=(--dry-run)
-          [[ "${{ needs.plan.outputs.force }}" == "true" ]] && ARGS+=(--force)
-          [[ "${{ needs.plan.outputs.enable_publish }}" == "true" ]] && ARGS+=(--publish)
 
-          ./scripts/build/build-and-publish-images.sh "${ARGS[@]}" build_list.txt
+          [[ "${{ needs.plan.outputs.dry_run }}" == "true" ]] && \
+            ARGS+=(--dry-run)
+
+          [[ "${{ needs.plan.outputs.force }}" == "true" ]] && \
+            ARGS+=(--force)
+
+          [[ "${{ needs.plan.outputs.enable_publish }}" == "true" ]] && \
+            ARGS+=(--publish)
+
+          ./scripts/build/build-and-publish-images.sh \
+            "${ARGS[@]}" \
+            build_list.txt
