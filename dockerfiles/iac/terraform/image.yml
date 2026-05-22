@@ -11,7 +11,7 @@ components:
     type: github_release
     repo: terraform-linters/tflint
     track: v0.62
-    version: v0.62.0
+    version: v0.62.1
     arg: TFLINT_VERSION
   tfsec:
     type: github_release
@@ -23,18 +23,18 @@ components:
     type: dockerhub
     name: hashicorp/terraform
     track: 1.15
-    version: 1.15.2
+    version: 1.15.4
     arg: TERRAFORM_TAG
 upstream:
   registry: docker
   name: hashicorp/terraform
   track: 1.15
-  version: 1.15.2
+  version: 1.15.4
 version_args:
-  TERRAFORM_TAG: 1.15.2
-  TFLINT_VERSION: v0.62.0
+  TERRAFORM_TAG: 1.15.4
+  TFLINT_VERSION: v0.62.1
   TFSEC_VERSION: v1.28.14
 args:
-  TERRAFORM_TAG: 1.15.2
-  TFLINT_VERSION: v0.62.0
+  TERRAFORM_TAG: 1.15.4
+  TFLINT_VERSION: v0.62.1
   TFSEC_VERSION: v1.28.14
