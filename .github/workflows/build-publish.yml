@@ -92,6 +92,8 @@ jobs:
           DRY_RUN="${{ inputs.dry_run || false }}"
           FORCE="${{ inputs.force || false }}"
           IMAGE="${{ inputs.image || '' }}"
+
+          ## When ENABLE_PUBLISH is 'true', changed containers will re-publish to the container registry. 
           ENABLE_PUBLISH="${{ inputs.enable_publish || false }}"
 
           echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT

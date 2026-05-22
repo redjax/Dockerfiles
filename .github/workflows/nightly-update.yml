@@ -31,3 +31,10 @@ jobs:
     with:
       dry_run: ${{ inputs.dry_run || false }}
     secrets: inherit
+
+  build_publish:
+    needs: update
+    uses: ./.github/workflows/build-publish.yml
+    with:
+      enable_publish: true
+    secrets: inherit
