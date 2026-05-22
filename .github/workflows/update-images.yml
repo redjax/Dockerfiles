@@ -143,13 +143,8 @@ jobs:
           find . -name image.yml -type f | while read -r manifest; do
             echo "Updating $manifest"
 
-            ARGS=(--file "$manifest")
-
-            if [[ "${{ needs.plan.outputs.dry_run }}" == "true" ]]; then
-              ARGS+=(--dry-run)
-            fi
-
-            ./scripts/update/bump-image-manifest.sh "${ARGS[@]}"
+            ./scripts/update/bump-image-manifest.sh \
+              --file "$manifest"
           done
 
       - name: Configure git
