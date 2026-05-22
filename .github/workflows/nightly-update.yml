@@ -11,6 +11,12 @@ name: Nightly image update
 
 on:
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run - preview changes without committing"
+        required: false
+        default: false
+        type: boolean
   schedule:
     - cron: "0 3 * * *"
 
