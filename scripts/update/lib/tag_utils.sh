@@ -48,6 +48,6 @@ function latest_tag_for_track() {
   if ((${#plain_tags[@]} > 0)); then
     printf '%s\n' "${plain_tags[@]}" | sort -V | tail -n1
   else
-    printf '%s\n' "${suffix_tags[@]}" | sort -V | tail -n1
+    printf '%s\n' "${suffix_tags[@]}" | sort -t. -k1,1V -k2,2V -k3,3V | tail -n1
   fi
 }

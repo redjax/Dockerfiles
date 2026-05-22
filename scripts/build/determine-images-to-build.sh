@@ -75,19 +75,19 @@ function changed_by_git() {
   dockerfile="$(yq e '.dockerfile // ""' "$manifest")"
   context="$(yq e '.context // ""' "$manifest")"
 
-  grep -Fxq "$manifest" changed_files.txt && return 0
-  [[ -n "$dockerfile" ]] && grep -Fxq "$dockerfile" changed_files.txt && return 0
+  grep -Fxq "$manifest" ${build_list_file} && return 0
+  [[ -n "$dockerfile" ]] && grep -Fxq "$dockerfile" ${build_list_file} && return 0
 
   if [[ -n "$context" ]]; then
-    grep -Fxq "$context" changed_files.txt && return 0
-    grep -Fq "${context}/" changed_files.txt && return 0
+    grep -Fxq "$context" ${build_list_file} && return 0
+    grep -Fq "${context}/" ${build_list_file} && return 0
   fi
 
   return 1
 }
 
 ## Build changed files list
-changed_files_file="changed_files.txt"
+changed_files_file="${build_list_file}"
 if [[ "$force" == "false" ]]; then
   if git rev-parse --verify HEAD >/dev/null 2>&1; then
     git diff --name-only HEAD~1..HEAD > "$changed_files_file" 2>/dev/null || true

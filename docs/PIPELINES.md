@@ -12,6 +12,8 @@ Pipeline logic lives in the [`scripts/`](../scripts/) directory wherever possibl
   - [Tag bump](#tag-bump)
   - [Build and publish](#build-and-publish)
   - [Nightly pipeline](#nightly-pipeline)
+- [Authentication](#authentication)
+  - [Github Authentication](#github-authentication)
 
 ## Update & Release Workflows
 
@@ -41,3 +43,20 @@ When `dry_run` is enabled, the workflow prints the commands it would run instead
 The nightly pipeline orchestrates the tag bump and build/publish pipelines into a scheduled task. It first runs the update workflow, then runs the build and publish workflow. This keeps images up to date with their upstream versions, and ensures the new versions are published to my container registry.
 
 It also runs the container registry cleanup script to trim older images.
+
+## Authentication
+
+### Github Authentication
+
+This repository uses a [Github Personal Access Token (PAT)](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens). The permissions it needs are:
+
+- Repository: Scoped to this repo
+- Actions: `rw`
+  - Allow actions to write data, i.e. image manifest updates and bumped Dockerfiles.
+- Contents: `rw`
+  - Make changes to files, allow `git commit` and `git push`.
+- Metadata: `r`
+- Pull requests: `rw`
+  - Allow opening & managing automated PRs.
+
+The repository also requires Github Actions to have read/write access in the repository settings, so it can upload to and delete from the container registry.
