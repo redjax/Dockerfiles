@@ -1,3 +1,4 @@
+---
 ############################################
 # Scan repository for image.yml manifests  #
 # and check for updated upstream versions. #
@@ -21,6 +22,7 @@ on:
         description: "Optional path to a single image directory, e.g. dockerfiles/base/alpine"
         required: false
         type: string
+
       dry_run:
         description: "Dry run - preview changes without committing"
         required: false
@@ -32,6 +34,7 @@ on:
       image:
         required: false
         type: string
+
       dry_run:
         required: false
         type: boolean
@@ -100,6 +103,7 @@ jobs:
             cp "$manifest" "$before"
 
             args=(--file "$manifest")
+
             if [[ "${{ steps.meta.outputs.dry_run }}" == "true" ]]; then
               args+=(--dry-run)
             fi
@@ -119,13 +123,6 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload changed image list
-        if: steps.detect.outputs.changed == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: changed-images
-          path: changed_images.txt
-
   commit:
     runs-on: ubuntu-latest
     needs: plan
@@ -136,32 +133,24 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref_name }}
-
-      - name: Download changed images
-        uses: actions/download-artifact@v8
-        with:
-          name: changed-images
+          token: ${{ secrets.GH_ACTIONS_PAT }}
 
       - name: Re-run image updates
         shell: bash
         run: |
           set -euo pipefail
 
-          if [[ ! -f changed_images.txt ]]; then
-            echo "No changed images"
-            exit 0
-          fi
+          find . -name image.yml -type f | while read -r manifest; do
+            echo "Updating $manifest"
 
-          while IFS= read -r dir; do
-            [[ -n "$dir" ]] || continue
+            ARGS=(--file "$manifest")
 
-            find "$dir" -name image.yml -type f | while read -r manifest; do
-              echo "Updating $manifest"
+            if [[ "${{ needs.plan.outputs.dry_run }}" == "true" ]]; then
+              ARGS+=(--dry-run)
+            fi
 
-              ./scripts/update/bump-image-manifest.sh \
-                --file "$manifest"
-            done
-          done < changed_images.txt
+            ./scripts/update/bump-image-manifest.sh "${ARGS[@]}"
+          done
 
       - name: Configure git
         run: |
