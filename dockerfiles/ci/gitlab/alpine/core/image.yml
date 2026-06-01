@@ -1,0 +1,17 @@
+---
+name: gitlab-alpine-core
+category: ci
+description: Minimal Alpine core image for GitLab CI jobs.
+publish: true
+context: dockerfiles/ci/gitlab/alpine/core
+dockerfile: dockerfiles/ci/gitlab/alpine/core/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/gitlab-alpine-core
+upstream:
+  registry: docker
+  name: alpine
+  track: 3.23
+  version: 3.23.4
+version_args:
+  ALPINE_TAG: 3.23.4
+args:
+  ALPINE_TAG: 3.23.4

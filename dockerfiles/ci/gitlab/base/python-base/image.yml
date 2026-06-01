@@ -1,0 +1,17 @@
+---
+name: gitlab-python-base
+category: ci
+description: GitLab CI base image for Python jobs.
+publish: true
+context: dockerfiles/ci/gitlab/base/python-base
+dockerfile: dockerfiles/ci/gitlab/base/python-base/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/gitlab-python-base
+upstream:
+  registry: docker
+  name: alpine
+  track: 3.23
+  version: 3.23.4
+version_args:
+  ALPINE_TAG: 3.23.4
+args:
+  ALPINE_TAG: 3.23.4
