@@ -32,6 +32,7 @@ LABEL org.opencontainers.image.title="alpine-base" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
+      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/base/alpine/README.md" \
       org.opencontainers.image.description="Minimal Alpine base image with additional tooling installed."
 
 CMD ["/bin/ash"]

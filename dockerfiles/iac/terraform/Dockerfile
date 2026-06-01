@@ -52,6 +52,7 @@ LABEL org.opencontainers.image.title="terraform-tools" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
+      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/iac/terraform/README.md" \
       org.opencontainers.image.description="Image with Terraform and development tools like tflint and tfsec."
 
 ENTRYPOINT ["/bin/sh"]

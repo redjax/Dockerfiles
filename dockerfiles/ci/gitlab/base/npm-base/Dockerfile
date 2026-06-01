@@ -33,6 +33,7 @@ LABEL org.opencontainers.image.title="gitlab-npm-base" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
+      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/ci/gitlab/base/npm-base/README.md" \
       org.opencontainers.image.description="GitLab CI base image for Node.js and npm jobs."
 
 CMD ["/bin/ash"]

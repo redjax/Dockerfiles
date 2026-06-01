@@ -33,6 +33,7 @@ LABEL org.opencontainers.image.title="gitlab-docker-base" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
+      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/ci/gitlab/base/docker-base/README.md" \
       org.opencontainers.image.description="GitLab CI base image with Docker CLI and core shell tooling."
 
 CMD ["/bin/sh"]

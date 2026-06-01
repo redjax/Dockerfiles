@@ -48,6 +48,7 @@ LABEL org.opencontainers.image.title="taskfile" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
+      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/automation/taskfile/README.md" \
       org.opencontainers.image.description="Alpine image with Taskfile installed for build automation."
 
 ## Set entrypoint to task binary so docker run commands execute taskfile
