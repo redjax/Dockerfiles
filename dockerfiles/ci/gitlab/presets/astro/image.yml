@@ -1,0 +1,17 @@
+---
+name: gitlab-astro
+category: ci
+description: Opinionated GitLab CI image for Astro pipelines with Docker, Node, and Python tooling.
+publish: true
+context: dockerfiles/ci/gitlab/presets/astro
+dockerfile: dockerfiles/ci/gitlab/presets/astro/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/gitlab-astro
+upstream:
+  registry: docker
+  name: docker
+  track: 29.5
+  version: 29.5.0
+version_args:
+  DOCKER_IMG_VER: 29.5.0
+args:
+  DOCKER_IMG_VER: 29.5.0
