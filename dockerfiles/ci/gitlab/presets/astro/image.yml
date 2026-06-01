@@ -10,7 +10,7 @@ upstream:
   registry: docker
   name: docker
   track: 29.5
-  version: 29.5.0
+  version: 29.5.2
 version_args:
   DOCKER_IMG_VER: 29.5.0
 args:
