@@ -96,8 +96,15 @@ jobs:
           FORCE="${{ inputs.force || false }}"
           IMAGE="${{ inputs.image || '' }}"
 
-          ## When ENABLE_PUBLISH is 'true', changed containers will re-publish to the container registry. 
-          ENABLE_PUBLISH="${{ inputs.enable_publish || false }}"
+          ## Publish by default on push to main.
+          #  For workflow_dispatch/workflow_call, respect explicit inputs.
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            ENABLE_PUBLISH="true"
+          else
+            ENABLE_PUBLISH="${{ inputs.enable_publish || false }}"
+          fi
+
+          echo "Resolved publish mode: event=${{ github.event_name }}, dry_run=${DRY_RUN}, force=${FORCE}, enable_publish=${ENABLE_PUBLISH}, image=${IMAGE:-<all>}"
 
           echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
           echo "force=$FORCE" >> $GITHUB_OUTPUT
