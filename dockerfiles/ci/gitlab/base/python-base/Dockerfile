@@ -36,6 +36,7 @@ LABEL org.opencontainers.image.title="gitlab-python-base" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
+      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/ci/gitlab/base/python-base/README.md" \
       org.opencontainers.image.description="GitLab CI base image for Python jobs."
 
 CMD ["/bin/ash"]

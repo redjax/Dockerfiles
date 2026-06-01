@@ -36,6 +36,7 @@ LABEL org.opencontainers.image.title="bump-my-version" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
+      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/versioning/bump-my-version/README.md" \
       org.opencontainers.image.description="Lightweight versioning image with bump-my-version, git, and curl."
 
 CMD ["bump-my-version", "--help"]

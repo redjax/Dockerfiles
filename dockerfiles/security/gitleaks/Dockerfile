@@ -23,6 +23,7 @@ LABEL org.opencontainers.image.title="gitleaks" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
+      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/security/gitleaks/README.md" \
       org.opencontainers.image.description="Image derived from official Gitleaks image."
 
 CMD ["version"]
