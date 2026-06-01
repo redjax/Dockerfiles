@@ -61,6 +61,10 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
     --dry-run)
       dry_run="true"
       shift
