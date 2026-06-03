@@ -10,7 +10,7 @@ upstream:
   registry: docker
   name: trufflesecurity/trufflehog
   track: 3.95
-  version: 3.95.4
+  version: 3.95.5
 version_args:
   TRUFFLEHOG_TAG: 3.95.2
 args:
