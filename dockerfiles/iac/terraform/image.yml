@@ -23,18 +23,18 @@ components:
     type: dockerhub
     name: hashicorp/terraform
     track: 1.15
-    version: 1.15.5
+    version: 1.15.6
     arg: TERRAFORM_TAG
 upstream:
   registry: docker
   name: hashicorp/terraform
   track: 1.15
-  version: 1.15.5
+  version: 1.15.6
 version_args:
-  TERRAFORM_TAG: 1.15.5
+  TERRAFORM_TAG: 1.15.6
   TFLINT_VERSION: v0.62.1
   TFSEC_VERSION: v1.28.14
 args:
-  TERRAFORM_TAG: 1.15.5
+  TERRAFORM_TAG: 1.15.6
   TFLINT_VERSION: v0.62.1
   TFSEC_VERSION: v1.28.14
