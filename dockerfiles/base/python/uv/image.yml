@@ -3,8 +3,8 @@ name: uv-base
 category: base
 description: Minimal Debian-based image with Astral uv installed for Python project execution.
 publish: true
-context: dockerfiles/base/uv
-dockerfile: dockerfiles/base/uv/Dockerfile
+context: dockerfiles/base/python/uv
+dockerfile: dockerfiles/base/python/uv/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/uv-base
 upstream:
   registry: docker
