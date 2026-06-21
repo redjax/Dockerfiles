@@ -1,0 +1,25 @@
+---
+name: go-ubuntu-base
+category: base
+description: Container with Go and supporting tools like GoReleaser.
+publish: true
+context: dockerfiles/base/go-ubuntu-base
+dockerfile: dockerfiles/base/go-ubuntu-base/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/go-ubuntu-base
+upstream:
+  registry: docker
+  name: ubuntu
+  track: 24.04
+  version: 24.04
+version_args:
+  UBUNTU_VERSION: 24.04
+  GOLANG_VERSION: 1.26.4
+  GORELEASER_VERSION: 2.16.0
+  GOLANGCI_LINT_VERSION: 1.64.8
+  GOIMPORTS_VERSION: v0.46.0
+args:
+  UBUNTU_VERSION: 24.04
+  GOLANG_VERSION: 1.26.4
+  GORELEASER_VERSION: 2.16.0
+  GOLANGCI_LINT_VERSION: 1.64.8
+  GOIMPORTS_VERSION: v0.46.0
