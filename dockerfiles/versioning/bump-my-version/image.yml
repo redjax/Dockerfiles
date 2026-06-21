@@ -1,0 +1,17 @@
+---
+name: bump-my-version
+category: tooling
+description: Lightweight versioning image with bump-my-version, git, and curl.
+publish: true
+context: dockerfiles/versioning/bump-my-version
+dockerfile: dockerfiles/versioning/bump-my-version/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/bump-my-version
+upstream:
+  registry: docker
+  name: alpine
+  track: 3.23
+  version: 3.23.4
+version_args:
+  ALPINE_TAG: 3.23.4
+args:
+  ALPINE_TAG: 3.23.4

@@ -1,0 +1,17 @@
+---
+name: gitlab-debian-core
+category: ci
+description: Minimal Debian core image for GitLab CI jobs.
+publish: true
+context: dockerfiles/ci/gitlab/debian/core
+dockerfile: dockerfiles/ci/gitlab/debian/core/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/gitlab-debian-core
+upstream:
+  registry: docker
+  name: debian
+  track: 13
+  version: 13.5
+version_args:
+  DEBIAN_TAG: 13.5
+args:
+  DEBIAN_TAG: 13.5

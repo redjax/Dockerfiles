@@ -1,15 +1,19 @@
-## https://hub.docker.com/_/ubuntu
-ARG UBUNTU_TAG=26.04
+#########################################################
+# Minimal Debian GitLab CI runner base image.           #
+#########################################################
+
+## https://hub.docker.com/_/debian
+ARG DEBIAN_TAG=13.5
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE="local-build"
 
-FROM ubuntu:${UBUNTU_TAG}
+FROM debian:${DEBIAN_TAG}
 
 ## Import args from outer layer
-ARG UBUNTU_TAG
+ARG DEBIAN_TAG
 ARG IMAGE_VERSION
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE
@@ -22,19 +26,18 @@ RUN apt-get update \
         ca-certificates \
         curl \
         git \
-        jq \
         openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /work
 
 ## Metadata
-LABEL org.opencontainers.image.title="ubuntu-base" \
-      org.opencontainers.image.base.name="ubuntu:${UBUNTU_TAG}" \
+LABEL org.opencontainers.image.title="gitlab-debian-core" \
+      org.opencontainers.image.base.name="debian:${DEBIAN_TAG}" \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${IMAGE_CREATED}" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
-      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/base/ubuntu/README.md" \
-      org.opencontainers.image.description="Minimal Ubuntu base image with additional tooling installed."
+      org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/ci/gitlab/debian/core/README.md" \
+      org.opencontainers.image.description="Minimal Debian core image for GitLab CI jobs."
 
 CMD ["/bin/bash"]
