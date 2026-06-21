@@ -10,10 +10,10 @@ upstream:
   registry: docker
   name: catthehacker/ubuntu
   track: act-24.04
-  version: act-24.04
+  version: act-24.04-20260615
 version_args:
-  UBUNTU_VERSION: 24.04
-  BASE_IMG_VERSION: 24.04
+  UBUNTU_VERSION: "24.04"
+  BASE_IMG_VERSION: "24.04"
 args:
-  UBUNTU_VERSION: 24.04
-  BASE_IMG_VERSION: 24.04
+  UBUNTU_VERSION: "24.04"
+  BASE_IMG_VERSION: "24.04"
