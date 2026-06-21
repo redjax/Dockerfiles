@@ -1,0 +1,19 @@
+---
+name: forgejo-go-base
+category: ci
+description: Forgejo Actions base image for Go workflows with Go and GoReleaser pre-installed.
+publish: true
+context: dockerfiles/ci/forgejo/base/go-base
+dockerfile: dockerfiles/ci/forgejo/base/go-base/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/forgejo-go-base
+upstream:
+  registry: docker
+  name: catthehacker/ubuntu
+  track: act-24.04
+  version: act-24.04
+version_args:
+  UBUNTU_VERSION: 24.04
+  BASE_IMG_VERSION: 24.04
+args:
+  UBUNTU_VERSION: 24.04
+  BASE_IMG_VERSION: 24.04
