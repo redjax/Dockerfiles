@@ -10,7 +10,10 @@ set -euo pipefail
 
 ## Verify required CLI tools are installed before doing any work
 for cmd in curl yq jq awk sort head tail grep cut tr; do
-  command -v "$cmd" >/dev/null 2>&1 || { echo "[ERROR] $cmd is not installed" >&2; exit 1; }
+  command -v "$cmd" >/dev/null 2>&1 || {
+    echo "[ERROR] $cmd is not installed" >&2
+    exit 1
+  }
 done
 
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,36 +51,39 @@ SCAN_PATH="."
 ## Parse command-line options for summary output or path-limited scans
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --summary)
-      SUMMARY=true
-      shift
-      ;;
-    --path)
-      SCAN_PATH="$2"
-      shift 2
-      ;;
-    --github-token)
-      GH_TOKEN="$2"
-      shift 2
-      ;;
-    --github-token=*)
-      GH_TOKEN="${1#*=}"
-      shift
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "[ERROR] Unknown argument: $1" >&2
-      usage >&2
-      exit 1
-      ;;
+  --summary)
+    SUMMARY=true
+    shift
+    ;;
+  --path)
+    SCAN_PATH="$2"
+    shift 2
+    ;;
+  --github-token)
+    GH_TOKEN="$2"
+    shift 2
+    ;;
+  --github-token=*)
+    GH_TOKEN="${1#*=}"
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "[ERROR] Unknown argument: $1" >&2
+    usage >&2
+    exit 1
+    ;;
   esac
 done
 
 ## Make sure the requested scan path exists before searching it
-[[ -d "$SCAN_PATH" ]] || { echo "[ERROR] Scan path not found: $SCAN_PATH" >&2; exit 1; }
+[[ -d "$SCAN_PATH" ]] || {
+  echo "[ERROR] Scan path not found: $SCAN_PATH" >&2
+  exit 1
+}
 
 ## Return the complete tag list for a given registry/name pair.
 #  This is used when we need to inspect all available tags for a repo,
@@ -87,22 +93,22 @@ function get_tags() {
   local name="$2"
 
   case "$registry" in
-    docker)
-      dockerhub_list_tags "$name"
-      ;;
-    ghcr)
-      ghcr_list_tags "$name"
-      ;;
-    gitlab)
-      gitlab_list_tags "$name"
-      ;;
-    acr)
-      acr_list_tags "$name"
-      ;;
-    github_release)
-      github_list_tags "$name"
-      ;;
-    *) return 1 ;;
+  docker)
+    dockerhub_list_tags "$name"
+    ;;
+  ghcr)
+    ghcr_list_tags "$name"
+    ;;
+  gitlab)
+    gitlab_list_tags "$name"
+    ;;
+  acr)
+    acr_list_tags "$name"
+    ;;
+  github_release)
+    github_list_tags "$name"
+    ;;
+  *) return 1 ;;
   esac
 }
 
@@ -115,27 +121,28 @@ function get_latest_version() {
   local track="$3"
 
   case "$registry" in
-    docker)
-      dockerhub_latest_version_tag "$name" "$track"
-      ;;
-    ghcr)
-      ghcr_latest_version_tag "$name" "$track"
-      ;;
-    gitlab)
-      gitlab_latest_version_tag "$name" "$track"
-      ;;
-    acr)
-      acr_latest_version_tag "$name" "$track"
-      ;;
-    github_release)
-      github_list_tags "$name" | latest_tag_for_track "$track"
-      ;;
-    manual)
-      echo ""
-      ;;
-    *)
-      echo "[ERROR] Unsupported registry: $registry" >&2; return 1
-      ;;
+  docker)
+    dockerhub_latest_version_tag "$name" "$track"
+    ;;
+  ghcr)
+    ghcr_latest_version_tag "$name" "$track"
+    ;;
+  gitlab)
+    gitlab_latest_version_tag "$name" "$track"
+    ;;
+  acr)
+    acr_latest_version_tag "$name" "$track"
+    ;;
+  github_release)
+    github_list_tags "$name" | latest_tag_for_track "$track"
+    ;;
+  manual)
+    echo ""
+    ;;
+  *)
+    echo "[ERROR] Unsupported registry: $registry" >&2
+    return 1
+    ;;
   esac
 }
 
@@ -144,28 +151,25 @@ function get_latest_version() {
 #  instead of plain lexicographic ordering
 function version_key() {
   local tag="$1"
-  local major minor patch prefix pre_release
-
-  prefix=""
-  pre_release=""
+  local prefix="" pre_release=""
+  local major minor patch
 
   [[ "$tag" == v* ]] && prefix="v" && tag="${tag#v}"
 
-  ## Handle pre-release versions by removing or marking them
   if [[ "$tag" =~ - ]]; then
     pre_release="true"
-    ## Remove the pre-release part for sorting
     tag="${tag%-*}"
   fi
 
-  major="$(printf '%s' "$tag" | cut -d. -f1)"
-  minor="$(printf '%s' "$tag" | cut -d. -f2)"
-  patch="$(printf '%s' "$tag" | cut -d. -f3)"
+  if [[ ! "$tag" =~ ^[0-9]+([.][0-9]+){0,2}$ ]]; then
+    printf '%s\n' "$1"
+    return 0
+  fi
 
+  IFS='.' read -r major minor patch <<<"$tag"
   [[ -z "$minor" ]] && minor=0
   [[ -z "$patch" ]] && patch=0
 
-  ## If it's a pre-release version, we treat it as lower than any numeric version
   if [[ "$pre_release" == "true" ]]; then
     printf '%s%09d.%09d.%09d-000000\n' "$prefix" "$major" "$minor" "$patch"
   else
@@ -215,7 +219,7 @@ function highest_track_for_tags() {
       if [[ -z "$current_minor" ]]; then
         ## If the current track is a simple major line (for example 12),
         #  then any higher major number indicates a newer track
-        if (( major > current_major )); then
+        if ((major > current_major)); then
           candidate="${tag}"
           if [[ -z "$best" || "$(version_key "$candidate")" > "$(version_key "$best")" ]]; then
             best="$candidate"
@@ -224,7 +228,7 @@ function highest_track_for_tags() {
       else
         ## If the current track has major.minor format, detect a newer
         #  major/minor line and normalize the comparison to the track label
-        if (( major > current_major )) || { (( major == current_major )) && (( minor > current_minor )); }; then
+        if ((major > current_major)) || { ((major == current_major)) && ((minor > current_minor)); }; then
           candidate="${tag%.*}"
           if [[ -z "$best" || "$(version_key "$candidate")" > "$(version_key "$best")" ]]; then
             best="$candidate"
@@ -341,11 +345,11 @@ for file in "${manifests[@]}"; do
 
     identifier=""
     case "$type" in
-      ## The identifier field differs slightly by source type
-      dockerhub) identifier="$(yq e ".components.${component}.name" "$file")" ;;
-      github_release) identifier="$(yq e ".components.${component}.repo" "$file")" ;;
-      ghcr|gitlab|acr) identifier="$(yq e ".components.${component}.name" "$file")" ;;
-      *) continue ;;
+    ## The identifier field differs slightly by source type
+    dockerhub) identifier="$(yq e ".components.${component}.name" "$file")" ;;
+    github_release) identifier="$(yq e ".components.${component}.repo" "$file")" ;;
+    ghcr | gitlab | acr) identifier="$(yq e ".components.${component}.name" "$file")" ;;
+    *) continue ;;
     esac
 
     ## Retrieve all tags for the component source so we can compare both
