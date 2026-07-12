@@ -18,14 +18,22 @@ done
 
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="${THIS_DIR}/lib"
+GH_TOKEN="${GH_TOKEN:-}"
 
 ## Load registry and tag helper functions used for upstream/version lookups
+# shellcheck disable=SC1091
 source "${LIB_DIR}/components.sh"
+# shellcheck disable=SC1091
 source "${LIB_DIR}/tag_utils.sh"
+# shellcheck disable=SC1091
 source "${LIB_DIR}/dockerhub.sh"
+# shellcheck disable=SC1091
 source "${LIB_DIR}/ghcr.sh"
+# shellcheck disable=SC1091
 source "${LIB_DIR}/gitlab.sh"
+# shellcheck disable=SC1091
 source "${LIB_DIR}/acr.sh"
+# shellcheck disable=SC1091
 source "${LIB_DIR}/gh-release.sh"
 
 GH_TOKEN="${GITHUB_TOKEN:-}"
