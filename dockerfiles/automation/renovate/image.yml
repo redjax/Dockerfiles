@@ -12,6 +12,8 @@ upstream:
   track: 43.176-full
   version: 43.176.4-full
 version_args:
-  RENOVATE_VERSION: 43.176.4-full
+  RENOVATE_TAG: 43.176.4-full
+  DEBIAN_TAG: "13.4"
 args:
-  RENOVATE_VERSION: 43.176.4-full
+  RENOVATE_TAG: 43.176.4-full
+  DEBIAN_TAG: "13.4"
