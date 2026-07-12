@@ -1,0 +1,19 @@
+---
+name: renovate
+category: automation
+description: Renovate keeps your dependenies up to date.
+publish: true
+context: dockerfiles/automation/renovate
+dockerfile: dockerfiles/automation/renovate/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/renovate
+upstream:
+  registry: docker
+  name: renovate/renovate
+  track: 43.176-full
+  version: 43.176.4-full
+version_args:
+  RENOVATE_TAG: 43.176.4-full
+  DEBIAN_TAG: "13.4"
+args:
+  RENOVATE_TAG: 43.176.4-full
+  DEBIAN_TAG: "13.4"
