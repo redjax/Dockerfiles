@@ -36,7 +36,7 @@ The [Renovate workflow](../.github/workflows/renovate.yml) runs Renovate against
   - `upstream.version` and `version_args` in `image.yml`.
   - Annotated `ARG` defaults in Dockerfiles.
 
-With automerge enabled, Renovate merges those PRs automatically once checks pass. This replaces the previous bespoke tag bump scripts and pipelines.
+With automerge enabled, Renovate merges those PRs automatically once checks pass. This replaces the previous bespoke tag bump scripts and pipelines. The pipeline runs 4x daily to pick up Renovate changes, and triggers any time a push to `renovate/*` branch occurs. This chains Renovate actions so automated merging works more reliably.
 
 ### Build and publish
 
