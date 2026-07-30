@@ -3,9 +3,11 @@
 # Includes Go lang, tooling, & goreleaser.    #
 ###############################################
 
+# renovate: datasource=docker depName=ghcr.io/catthehacker/ubuntu versioning=semver
 ARG UBUNTU_VERSION=24.04
 
 ## https://github.com/redjax/Dockerfiles/pkgs/container/dockerfiles%2Fgo-ubuntu-base
+# renovate: datasource=docker depName=ghcr.io/redjax/dockerfiles/go-ubuntu-base versioning=semver
 ARG BASE_IMG_VERSION=${UBUNTU_VERSION}
 
 ## Metadata defaults. Override in scripts/pipelines
