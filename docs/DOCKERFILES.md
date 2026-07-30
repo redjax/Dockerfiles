@@ -5,6 +5,10 @@
 - [Image metadata labels](#image-metadata-labels)
   - [Examples](#examples)
     - [Debian Dockerfile with opencontainers labels](#debian-dockerfile-with-opencontainers-labels)
+- [Renovate Comments](#renovate-comments)
+  - [Renovate Docker tags](#renovate-docker-tags)
+  - [Renovate tool versions](#renovate-tool-versions)
+  - [Renovate both Docker tags and tool versions](#renovate-both-docker-tags-and-tool-versions)
 
 ## Image metadata labels
 
@@ -90,4 +94,106 @@ LABEL org.opencontainers.image.title="debian-base" \
 
 CMD ["/bin/bash"]
 
+```
+
+## Renovate Comments
+
+This repository uses [`renovate`](https://www.mend.io/mend-renovate/) to bump dependency and Docker image versions. The [`renovate.yml` pipeline](../.github/workflows/renovate.yml) runs nightly or on demand, and it uses the `dockerfile` manager and custom regular expressions for the `image.yml` files to bump dependency versions.
+
+The regular expressions will automatically work on `image.yml` manifests. The Dockerfiles use `ARG` lines to declare version numbers. You need to use Renovate comment markers to tell Renovate what to bump, and how.
+
+### Renovate Docker tags
+
+A Dockerfile using Alpine Linux as a base might look like:
+
+```dockerfile
+ARG ALPINE_TAG=3.22.4
+
+FROM alpine:${ALPINE_TAG} AS base
+
+...
+```
+
+To tell Renovate to watch the `ALPINE_TAG` arg, you can add a comment like `# renovate: datasource=docker depName=alpine versioning=semver`:
+
+```dockerfile
+# renovate: datasource=docker depName=alpine versioning=semver
+ARG ALPINE_TAG=3.22.4
+
+FROM alpine:${ALPINE_TAG} AS base
+```
+
+### Renovate tool versions
+
+Some Dockerfiles include a tool version arg too. For example, the [Taskfile Docker image](../dockerfiles/automation/taskfile/Dockerfile) has an `ARG TASKFILE_VERSION=v3.50.0`. The Renovate comment marker for this would be `# renovate: datasource=github-releases depName=go-task/task extractVersion=^v(?<version>.*)$`:
+
+```dockerfile
+# renovate: datasource=github-releases depName=go-task/task extractVersion=^v(?<version>.*)$
+ARG TASKFILE_VERSION=v3.50.0
+
+RUN curl -fsSL \
+      "https://github.com/go-task/task/releases/download/${TASKFILE_VERSION}/task_linux_amd64.tar.gz" \
+      -o /tmp/taskfile.tar.gz \
+    && mkdir /tmp/taskfile \
+    && tar -xzvf /tmp/taskfile.tar.gz -C /tmp/taskfile \
+    && chmod +x /tmp/taskfile/task \
+    && mv /tmp/taskfile/task /usr/local/bin/task \
+    && rm -rf /tmp/taskfile /tmp/taskfile.tar.gz
+```
+
+### Renovate both Docker tags and tool versions
+
+For images that have both Docker image tags and tool versions, i.e. the [`base/go-ubuntu-base` image](../dockerfiles/base/go-ubuntu-base/Dockerfile), you can use both types of comments:
+
+```dockerfile
+# renovate: datasource=docker depName=ubuntu versioning=semver
+ARG UBUNTU_VERSION=24.04
+
+# renovate: datasource=github-releases depName=golang/go extractVersion=^go(?<version>.*)$
+ARG GOLANG_VERSION=1.26.4
+
+# renovate: datasource=github-releases depName=goreleaser/goreleaser extractVersion=^v(?<version>.*)$
+ARG GORELEASER_VERSION=2.16.0
+
+FROM ubuntu:${UBUNTU_VERSION} AS base
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    ca-certificates \
+    curl \
+    git \
+    jq \
+    tar \
+    gzip \
+    unzip \
+    openssh-client \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work
+
+FROM base AS go
+
+ARG GOLANG_VERSION
+
+RUN curl -fsSL "https://go.dev/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz" | tar -xz -C /usr/local
+
+ENV PATH="/usr/local/go/bin:$PATH" \
+    GOROOT="/usr/local/go" \
+    GOPATH="/root/go" \
+    GO111MODULE=auto
+
+FROM go AS goreleaser
+
+ARG GORELEASER_VERSION
+
+RUN set -eux; \
+    tmpdir="$(mktemp -d)"; \
+    cd "$tmpdir"; \
+    curl -fsSLO "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_Linux_x86_64.tar.gz"; \
+    tar -xzf goreleaser_Linux_x86_64.tar.gz; \
+    install -m 0755 goreleaser /usr/local/bin/goreleaser; \
+    rm -rf "$tmpdir"
+
+ENTRYPOINT ["/usr/local/bin/goreleaser"]
+CMD ["--version"]
 ```
