@@ -29,7 +29,7 @@ RUN apk add --no-cache \
 ARG DEPENDABOT_VERSION
 
 RUN curl -fsSL \
-      "https://github.com/dependabot/cli/releases/download/v${DEPENDABOT_VERSION}/dependabot-v${DEPENDABOT_VERSION}-linux-amd64.tar.gz" \
+      "https://github.com/dependabot/cli/releases/download/${DEPENDABOT_VERSION}/dependabot-${DEPENDABOT_VERSION}-linux-amd64.tar.gz" \
       -o /tmp/dependabot.tar.gz \
     && tar -xzf /tmp/dependabot.tar.gz -C /usr/local/bin dependabot \
     && rm -f /tmp/dependabot.tar.gz \
