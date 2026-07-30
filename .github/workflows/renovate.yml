@@ -42,13 +42,12 @@ jobs:
       config-file: renovate.json
       ## Set to 'ignored' while testing renovate.json changes on a different base branch,
       #  otherwise use 'optional'
-      require-config: ignored
+      require-config: optional
       autodiscover: false
       runner-image: ubuntu-latest
       renovate-author-email: "5534031+redjax@users.noreply.github.com"
       base-branches: "main"
-      ## Set to 'false' to use the main branch. This shuld only be 'true' while testing changes on a branch
-      use-base-branch-config: false
+      use-base-branch-config: true
     secrets:
       renovate-token: ${{ secrets.RENOVATE_TOKEN }}
       gh-api-token: ${{ secrets.GH_API_TOKEN }}
