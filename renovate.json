@@ -36,6 +36,9 @@
         },
         {
             "description": "Automerge all dependency updates",
+            "matchPackageNames": [
+                "*"
+            ],
             "automerge": true,
             "automergeType": "pr",
             "automergeStrategy": "merge"
