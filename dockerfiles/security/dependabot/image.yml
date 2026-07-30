@@ -1,0 +1,24 @@
+---
+name: dependabot-cli
+category: tooling
+description: Dependabot CLI image for testing and debugging Dependabot updates.
+publish: true
+context: dockerfiles/tooling/dependabot
+dockerfile: dockerfiles/tooling/dependabot/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/dependabot-cli
+components:
+  dependabot:
+    type: github_release
+    repo: dependabot/cli
+    track: v1.91
+    version: v1.91.0
+    arg: DEPENDABOT_VERSION
+upstream:
+  registry: docker
+  name: alpine
+  track: "3.20"
+  version: "3.20"
+version_args:
+  DEPENDABOT_VERSION: 1.91.0
+args:
+  DEPENDABOT_VERSION: 1.91.0
