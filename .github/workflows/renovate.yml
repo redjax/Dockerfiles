@@ -44,7 +44,9 @@ jobs:
       log-level: ${{ inputs.log-level || 'info' }}
       repository: ${{ github.repository }}
       config-file: renovate.json
-      require-config: optional
+      ## Set to 'ignored' while testing renovate.json changes on a different base branch,
+      #  otherwise use 'optional'
+      require-config: ignored
       autodiscover: false
       runner-image: ubuntu-latest
       renovate-author-email: "5534031+redjax@users.noreply.github.com"
