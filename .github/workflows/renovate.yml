@@ -2,6 +2,9 @@
 name: Run Renovate
 
 on:
+  push:
+    branches:
+      - tmp/renovate-test
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
@@ -35,7 +38,8 @@ jobs:
   renovate:
     uses: redjax/pipelinetemplates/.github/workflows/renovate.yml@3bf418a504882351e8a06541527d98ddf685cd6e # main
     with:
-      mode: ${{ github.event_name == 'schedule' && 'run' || inputs.mode }}
+      # mode: ${{ github.event_name == 'schedule' && 'run' || inputs.mode }}
+      mode: run
       log-level: ${{ inputs.log-level || 'info' }}
       repository: ${{ github.repository }}
       config-file: renovate.json
