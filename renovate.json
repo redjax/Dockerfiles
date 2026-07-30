@@ -33,6 +33,12 @@
                 "docker"
             ],
             "versioning": "docker"
+        },
+        {
+            "description": "Automerge all dependency updates",
+            "automerge": true,
+            "automergeType": "pr",
+            "automergeStrategy": "merge"
         }
     ],
     "regexManagers": [
