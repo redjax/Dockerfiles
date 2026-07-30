@@ -5,7 +5,7 @@
 
 ## https://hub.docker.com/_/alpine
 # renovate: datasource=docker depName=alpine versioning=semver
-ARG ALPINE_TAG=3.22.4
+ARG ALPINE_TAG=3.24.1
 ## https://github.com/taskfile/task/releases
 #  Tells the script which version to download
 # # renovate: datasource=github-releases depName=go-task/task extractVersion=^v(?<version>.*)$

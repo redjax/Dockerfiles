@@ -1,6 +1,6 @@
 ## https://hub.docker.com/_/alpine
 # renovate: datasource=docker depName=alpine versioning=semver
-ARG ALPINE_TAG=3.22.4
+ARG ALPINE_TAG=3.24.1
 ## https://github.com/taskfile/task/releases
 # renovate: datasource=github-releases depName=go-task/task extractVersion=^v(?<version>.*)$
 ARG TASKFILE_VERSION=v3.50.0
