@@ -2,8 +2,6 @@
 name: Run Renovate
 
 on:
-  push:
-    branches: [feat/setup-renovate]
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
