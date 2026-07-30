@@ -10,7 +10,7 @@ upstream:
   registry: docker
   name: renovate/renovate
   track: 43.176-full
-  version: 43.176.3-full
+  version: 43.288.0-full
 version_args:
   RENOVATE_TAG: 43.176.3-full
   DEBIAN_TAG: "13.3"
