@@ -1,5 +1,10 @@
+## https://hub.docker.com/_/alpine
+# renovate: datasource=docker depName=alpine versioning=semver
+ARG ALPINE_TAG=3.20.10
+
 ## https://github.com/dependabot/cli/releases
-ARG DEPENDABOT_VERSION=1.91.0
+# renovate: datasource=github-releases depName=dependabot/cli extractVersion=^v?(?<version>.*)$
+ARG DEPENDABOT_VERSION=v1.91.0
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev

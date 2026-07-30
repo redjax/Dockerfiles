@@ -3,15 +3,20 @@
 # Includes Go lang, tooling, & goreleaser.    #
 ###############################################
 
+# renovate: datasource=docker depName=ubuntu versioning=semver
 ARG UBUNTU_VERSION=24.04
 
 ## https://go.dev/dl/
+# renovate: datasource=github-releases depName=golang/go extractVersion=^go(?<version>.*)$
 ARG GOLANG_VERSION=1.26.4
 ## https://github.com/goreleaser/goreleaser/releases
+# renovate: datasource=github-releases depName=goreleaser/goreleaser extractVersion=^v(?<version>.*)$
 ARG GORELEASER_VERSION=2.16.0
 ## https://github.com/golangci/golangci-lint/releases
+# renovate: datasource=github-releases depName=golangci/golangci-lint extractVersion=^v(?<version>.*)$
 ARG GOLANGCI_LINT_VERSION=2.12.2
 ## https://pkg.go.dev/golang.org/x/tools/cmd/goimports
+# renovate: datasource=github-tags depName=golang/tools versioning=semver
 ARG GOIMPORTS_VERSION=v0.46.0
 
 ## Metadata defaults. Override in scripts/pipelines

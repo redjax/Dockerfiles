@@ -1,4 +1,8 @@
+## https://github.com/Checkmarx/kics/releases
+# renovate: datasource=github-releases depName=Checkmarx/kics extractVersion=^v?(?<version>.*)$
 ARG KICS_TAG=2.1.20
+## https://hub.docker.com/_/alpine
+# renovate: datasource=docker depName=alpine versioning=semver
 ARG ALPINE_TAG=3.22.4
 
 FROM alpine:${ALPINE_TAG}

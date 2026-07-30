@@ -1,4 +1,5 @@
 ## https://hub.docker.com/_/alpine
+# renovate: datasource=docker depName=alpine versioning=semver
 ARG ALPINE_TAG=3.23.4
 
 ## Metadata defaults. Override in scripts/pipelines

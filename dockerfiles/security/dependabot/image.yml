@@ -19,6 +19,8 @@ upstream:
   track: "3.20"
   version: "3.20.10"
 version_args:
-  DEPENDABOT_VERSION: v1.91.0
+  ALPINE_TAG: "3.20.10"
+  DEPENDABOT_VERSION: "v1.91.0"
 args:
-  DEPENDABOT_VERSION: v1.91.0
+  ALPINE_TAG: "3.20.10"
+  DEPENDABOT_VERSION: "v1.91.0"
