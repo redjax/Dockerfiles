@@ -2,7 +2,7 @@
 ARG UV_BASE=0.11.21
 
 ## Base OS version
-ARG DEBIAN_TAG=12.13
+ARG DEBIAN_TAG=12.15
 
 ## Metadata defaults
 ARG IMAGE_VERSION=dev

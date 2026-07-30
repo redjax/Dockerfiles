@@ -1,5 +1,5 @@
 ## https://hub.docker.com/_/debian
-ARG DEBIAN_TAG=12.13
+ARG DEBIAN_TAG=12.15
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
