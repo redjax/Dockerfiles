@@ -1,6 +1,6 @@
 ## https://hub.docker.com/_/alpine
 # renovate: datasource=docker depName=alpine versioning=semver
-ARG ALPINE_TAG=3.20.10
+ARG ALPINE_TAG=3.24.1
 
 ## https://github.com/dependabot/cli/releases
 # renovate: datasource=github-releases depName=dependabot/cli extractVersion=^v?(?<version>.*)$
@@ -11,7 +11,7 @@ ARG IMAGE_VERSION=dev
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE="local-build"
 
-FROM alpine:3.20
+FROM alpine:3.24
 
 ## Import args from outer layer
 ARG DEPENDABOT_VERSION
