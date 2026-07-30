@@ -5,14 +5,14 @@
 - [Image metadata labels](#image-metadata-labels)
   - [Examples](#examples)
     - [Debian Dockerfile with opencontainers labels](#debian-dockerfile-with-opencontainers-labels)
-- [Renovate Comments](#renovate-comments)
+- [Renovate comments](#renovate-comments)
   - [Renovate Docker tags](#renovate-docker-tags)
   - [Renovate tool versions](#renovate-tool-versions)
   - [Renovate both Docker tags and tool versions](#renovate-both-docker-tags-and-tool-versions)
 
 ## Image metadata labels
 
-The [`LABEL` keyword](https://docs.docker.com/reference/dockerfile/#label) adds key/value metadata pairs to an image. Some code forges like Github allow [labels to annotate images published to their container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#labelling-container-images).
+The [`LABEL` keyword](https://docs.docker.com/reference/dockerfile/#label) adds key/value metadata pairs to an image. Some code forges like GitHub allow [labels to annotate images published to their container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#labelling-container-images).
 
 ### Examples
 
@@ -43,11 +43,11 @@ CMD ["/bin/bash"]
 
 ```
 
-But we can add [opencontainer labels](https://specs.opencontainers.org/image-spec/annotations/#pre-defined-annotation-keys). This example adds the following:
+But we can add [Open Container labels](https://specs.opencontainers.org/image-spec/annotations/#pre-defined-annotation-keys). This example adds the following:
 
 - `org.opencontainers.image.title="debian-base"`: The human-readable title of the image.
 - `org.opencontainers.image.base.name="debian:${DEBIAN_TAG}"`: The image reference of the image this image is based on.
-- `org.opencontainers.image.version="${IMAGE_VERSION}"`: The versionn of the packaged software.
+- `org.opencontainers.image.version="${IMAGE_VERSION}"`: The version of the packaged software.
 - `org.opencontainers.image.created="${IMAGE_CREATED}"`: The datetime when the image was built.
 - `org.opencontainers.image.source="${IMAGE_SOURCE}"`: URL to the source code for the image.
 - `org.opencontainers.image.description="Minimal Debian base image with additional tooling installed."`: Human-readable description of the image (max 512 chars).
@@ -96,11 +96,14 @@ CMD ["/bin/bash"]
 
 ```
 
-## Renovate Comments
+## Renovate comments
 
-This repository uses [`renovate`](https://www.mend.io/mend-renovate/) to bump dependency and Docker image versions. The [`renovate.yml` pipeline](../.github/workflows/renovate.yml) runs nightly or on demand, and it uses the `dockerfile` manager and custom regular expressions for the `image.yml` files to bump dependency versions.
+This repository uses [Renovate](https://github.com/renovatebot/renovate) to bump dependency and Docker image versions. Renovate runs on a schedule (or manually using the `workflow_dispatch`) and uses:
 
-The regular expressions will automatically work on `image.yml` manifests. The Dockerfiles use `ARG` lines to declare version numbers. You need to use Renovate comment markers to tell Renovate what to bump, and how.
+- The `dockerfile` manager to update base images referenced in `FROM` and `ARG` lines.
+- Custom `regexManagers` in `renovate.json` to read `image.yml` manifests and tie those values to Dockerfile `ARG`s.
+
+The `image.yml` manifests are the source of truth for which versions are tracked. The Dockerfiles use `ARG` lines to declare version numbers. You need to use Renovate comment markers to tell Renovate what to bump, and how.
 
 ### Renovate Docker tags
 
