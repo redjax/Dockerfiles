@@ -9,8 +9,8 @@ registry_path: ghcr.io/redjax/dockerfiles/go-ubuntu-base
 upstream:
   registry: docker
   name: ubuntu
-  track: 24.04
-  version: 24.04
+  track: 26.10
+  version: 26.10
 version_args:
   UBUNTU_VERSION: 24.04
   GOLANG_VERSION: 1.26.4
