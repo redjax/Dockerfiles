@@ -4,9 +4,11 @@
 ##############################################################
 
 ## https://hub.docker.com/_/alpine
+# renovate: datasource=docker depName=alpine versioning=semver
 ARG ALPINE_TAG=3.22.4
 ## https://github.com/taskfile/task/releases
 #  Tells the script which version to download
+# # renovate: datasource=github-releases depName=go-task/task extractVersion=^v(?<version>.*)$
 ARG TASKFILE_VERSION=v3.50.0
 
 ## Metadata defaults. Override in scripts/pipelines
