@@ -10,6 +10,7 @@ Pipeline logic lives in the [`scripts/`](../scripts/) directory wherever possibl
 
 - [Update \& Release Workflows](#update--release-workflows)
   - [Renovate workflow](#renovate-workflow)
+    - [Renovate Triggers](#renovate-triggers)
   - [Build and publish](#build-and-publish)
   - [Trim images](#trim-images)
 - [Authentication](#authentication)
@@ -37,6 +38,14 @@ The [Renovate workflow](../.github/workflows/renovate.yml) runs Renovate against
   - Annotated `ARG` defaults in Dockerfiles.
 
 With automerge enabled, Renovate merges those PRs automatically once checks pass. This replaces the previous bespoke tag bump scripts and pipelines. The pipeline runs 4x daily to pick up Renovate changes, and triggers any time a push to `renovate/*` branch occurs. This chains Renovate actions so automated merging works more reliably.
+
+#### Renovate Triggers
+
+The Renovate pipeline has the following triggers:
+
+- Scheduled - Runs the pipeline 4x each day.
+- `renovate/*` branch pushes: When a `renovate/*` pipeline changes, it triggers Renovate to perform actions like auto-merges and rebases.
+- Manual - A `workflow_dispatch` triggers allows for running the pipeline manually with configurable options.
 
 ### Build and publish
 
