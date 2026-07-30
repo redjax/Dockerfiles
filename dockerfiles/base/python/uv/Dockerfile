@@ -1,7 +1,9 @@
 ## https://docs.astral.sh/uv
+# renovate: datasource=docker depName=ghcr.io/astral-sh/uv versioning=semver
 ARG UV_BASE=0.11.21
 
 ## Base OS version
+# renovate: datasource=docker depName=debian versioning=semver
 ARG DEBIAN_TAG=12.13
 
 ## Metadata defaults
