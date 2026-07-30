@@ -36,7 +36,8 @@ permissions:
 
 jobs:
   renovate:
-    uses: redjax/pipelinetemplates/.github/workflows/renovate.yml@3bf418a504882351e8a06541527d98ddf685cd6e # main
+    # uses: redjax/pipelinetemplates/.github/workflows/renovate.yml@3bf418a504882351e8a06541527d98ddf685cd6e # main
+    uses: redjax/pipelinetemplates/.github/workflows/renovate.yml@feat/renovate-base-branch
     with:
       # mode: ${{ github.event_name == 'schedule' && 'run' || inputs.mode }}
       mode: run
@@ -47,6 +48,8 @@ jobs:
       autodiscover: false
       runner-image: ubuntu-latest
       renovate-author-email: "5534031+redjax@users.noreply.github.com"
+      base-branches: "tmp/renovate-test"
+      use-base-branch-config: true
     secrets:
       renovate-token: ${{ secrets.RENOVATE_TOKEN }}
       gh-api-token: ${{ secrets.GH_API_TOKEN }}
