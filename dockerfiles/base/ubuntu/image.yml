@@ -9,8 +9,8 @@ registry_path: ghcr.io/redjax/dockerfiles/ubuntu-base
 upstream:
   registry: docker
   name: ubuntu
-  track: 26.04
-  version: 26.04
+  track: 26.10
+  version: 26.10
 version_args:
   UBUNTU_TAG: 26.04
 args:
