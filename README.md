@@ -28,8 +28,8 @@
 
 ---
 
-A collection of my Dockerfiles organized by category. Pipeline automations check for image & tool updates each night. When new tags & releases are available, the pipeline rebuilds & releases the containers to the [package registry](https://github.com/redjax?tab=packages&repo_name=Dockerfiles).
+A collection of my Dockerfiles organized by category. [Renovate](https://github.com/renovatebot/renovate) automations keep Docker image tags and CLI tooling versions fresh & updated.
+
+When new tags & releases are available, Renovate opens PRs that bump version pins and, once auto-merged, triggers the build pipeline to rebuild & publish changed containers to the [package registry](https://github.com/redjax?tab=packages&repo_name=Dockerfiles).
 
 See the [usage docs](./docs/USAGE.md) for more information.
-
-The [`nightly-update` pipeline](https://github.com/redjax/Dockerfiles/actions/workflows/nightly-update.yml) runs each night to check for new upstream tags and rebuild containers. Read more about this repository's pipelines in the [pipeline docs](./docs/PIPELINES.md).
