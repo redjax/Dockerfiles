@@ -53,3 +53,7 @@ LABEL org.opencontainers.image.title="img-name" \
 CMD ["/bin/bash"]
 
 ```
+
+## Renovate
+
+You should add `# renovate: datasource=... depName=... versioning=...` comments above each `ARG` to ensure Renovate knows how to work with them. See the [Dockerfile docs for more info](../../docs/DOCKERFILES.md#renovate-comments).

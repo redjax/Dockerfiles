@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KICS_VERSION="${KICS_VERSION:-2.1.20}"
+KICS_VERSION="${KICS_VERSION:?KICS_VERSION env must be set}"
 KICS_REPO="https://github.com/Checkmarx/kics/releases/download"
 
 os="linux"

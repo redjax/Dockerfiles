@@ -1,3 +1,5 @@
+## https://github.com/gitleaks/gitleaks/releases
+# renovate: datasource=docker depName=ghcr.io/gitleaks/gitleaks versioning=semver
 ARG GITLEAKS_TAG=v8.30.1
 
 ## Metadata defaults. Override in scripts/pipelines

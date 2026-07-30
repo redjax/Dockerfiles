@@ -1,4 +1,5 @@
 ## https://hub.docker.com/_/ubuntu
+# renovate: datasource=docker depName=ubuntu versioning=semver
 ARG UBUNTU_TAG=26.04
 
 ## Metadata defaults. Override in scripts/pipelines
