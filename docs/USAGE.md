@@ -3,7 +3,7 @@
 > [!WARNING]
 > This document describes the desired state of this repository. Until this message is removed, it is possible/likely that the automations described are not fully functional yet.
 
-Container image updates for images in this repository are automated by CI/CD pipelines to keep the published images in-sync with their upstream versions. An `image.yml` manifest alongside each `Dockerfile` defines the upstream container to watch, and rebuilds the container when there is an newer version.
+Container image updates for images in this repository are automated by Renovate and CI/CD pipelines to keep the published images in sync with their upstream versions. An `image.yml` manifest alongside each `Dockerfile` defines the upstream container to watch and the versioned build arguments to keep in sync. Renovate updates those manifests and Dockerfile `ARG` defaults when new versions are available, and the build pipeline rebuilds and publishes the containers.
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -13,9 +13,8 @@ Container image updates for images in this repository are automated by CI/CD pip
 - [Building images](#building-images)
   - [Build script](#build-script)
   - [Build arguments](#build-arguments)
-- [Updating version pins](#updating-version-pins)
-  - [Bump script](#bump-script)
-  - [Version argument rules](#version-argument-rules)
+  - [Renovate configuration](#renovate-configuration)
+  - [Automated bumps vs. manual changes](#automated-bumps-vs-manual-changes)
 - [Generic manifest example](#generic-manifest-example)
 
 ## Repository layout
@@ -64,7 +63,7 @@ upstream:
   - `track`: Version track to follow
   - `version`: Current resolved version
   - `arg`: (optional) Dockerfile ARG that should be updated when version changes
-- `upstream`: Metadata for the image the container is based on, used by bump workflows to detect new versions. Each upstream defines:
+- `upstream`: Metadata for the image the container is based on, used by automation to detect new versions. Each upstream defines:
   - `registry`: Registry type (`docker`, `ghcr`, `gitlab`, etc.)
   - `name`: Image name
   - `track`: Version track to follow
@@ -74,7 +73,7 @@ upstream:
 
 ### Versioned values
 
-The `upstream.version` and `version_args` entries are typically the values updated by automation. The `upstream.track` field defines the version pattern to watch, while `upstream.version` pins the exact version currently in use.
+The `upstream.version` and `version_args` entries are typically the values updated by Renovate. The `upstream.track` field defines the version pattern to watch, while `upstream.version` pins the exact version currently in use.
 
 ## Building images
 
@@ -105,54 +104,66 @@ ARG ALPINE_TAG=3.22
 
 then the build uses `3.22` unless a different value is passed at build time.
 
-## Updating version pins
+### Renovate configuration
 
-### Bump script
-
-Each image directory can include an `image.yml` manifest that defines the Dockerfile path and the versioned build args that belong to that image. The bump script reads that manifest and updates matching `ARG` defaults in the referenced Dockerfile so the pinned values stay in sync with the repository metadata. It also checks for updates to any components defined in the manifest.
-
-Example:
-
-```shell
-./scripts/update/bump-dockerfile-arg.sh \
-  --file dockerfiles/base/alpine/image.yml
-```
-
-> [!TIP]
-> Use `--dry-run` to preview changes without modifying files:
->
-> ```shell
-> ./scripts/update/bump-dockerfile-arg.sh \
->   --file dockerfiles/base/alpine/image.yml \
->   --dry-run
-> ```
-
-### Version argument rules
-
-The `version_args` section should contain only build arguments that are declared in the Dockerfile with `ARG`. The script updates only matching `ARG NAME=value` lines, which keeps the Dockerfile defaults aligned with the manifest without changing unrelated build settings.
-
-Example `Dockerfile` fragment:
+Each versioned `ARG` in a Dockerfile that you want Renovate to manage should be annotated with a comment describing its datasource, dependency name, and versioning rules. For example:
 
 ```dockerfile
-ARG ALPINE_TAG=3.22
-ARG BUSYBOX_TAG=1.37
+## https://hub.docker.com/_/alpine
+# renovate: datasource=docker depName=alpine versioning=semver
+ARG ALPINE_TAG=3.23.4
+
+## https://github.com/terraform-linters/tflint/releases
+# renovate: datasource=github-releases depName=terraform-linters/tflint extractVersion=^v(?<version>.*)$
+ARG TFLINT_VERSION=0.62.0
 ```
 
-When the manifest changes, rerun the bump script to update the Dockerfile defaults before building or committing the image definition.
+The corresponding `image.yml` ties those ARGs to upstream metadata:
+
+```yaml
+upstream:
+  registry: docker
+  name: alpine
+  track: 3.23
+  version: 3.23.5
+
+version_args:
+  ALPINE_TAG: 3.23.4
+  TFLINT_VERSION: v0.62.0
+
+args:
+  ALPINE_TAG: 3.23.4
+  TFLINT_VERSION: v0.62.0
+```
+
+Renovate’s Docker and regex managers keep `upstream.version`, `version_args`, `args`, and the Dockerfile `ARG` defaults in sync.
+
+### Automated bumps vs. manual changes
+
+Renovate runs automatically on a schedule defined in [`.github/workflows/renovate.yml`](../.github/workflows/renovate.yml). It discovers new versions for:
+
+- Base images via the `dockerfile` manager.
+- Tool versions via `regexManagers` and `components` in `image.yml`.
+
+It opens PRs that update:
+
+- `upstream.version` and `version_args` in `image.yml`.
+- Annotated `ARG` defaults in Dockerfiles.
+
+With `automerge` enabled, Renovate merges those PRs automatically once checks pass. The `build-publish` workflow rebuilds and publishes containers for any changed `image.yml`/`Dockerfile` definitions.
+
+Manual changes to manifests or Dockerfiles (for example, adding new components or adjusting tracks) are still possible; Renovate will pick up those changes as the new baseline for future updates.
 
 ## Generic manifest example
 
-For a simple image definition, the manifest can be as small as this:
-
 ```yaml
----
 ---
 name: terraform-tools
 category: tooling
 description: Terraform CLI image with tflint and tfsec installed.
 publish: true
-context: dockerfiles/tools/iac/terraform
-dockerfile: dockerfiles/tools/iac/terraform/Dockerfile
+context: dockerfiles/iac/terraform
+dockerfile: dockerfiles/iac/terraform/Dockerfile
 registry_path: ghcr.io/redjax/dockerfiles/terraform-tools
 
 components:
@@ -182,7 +193,6 @@ upstream:
   name: hashicorp/terraform
   track: 1.14
   version: 1.14.9
-
 ```
 
-This keeps the image definition, build inputs, and pinned version values in one place, while the Dockerfile remains focused on build behavior.
+This keeps the image definition, build inputs, and pinned version values in one place. Renovate reads this manifest and the associated Dockerfile comments to keep those fields updated when new releases are available, while the Dockerfile remains focused on build behavior.
