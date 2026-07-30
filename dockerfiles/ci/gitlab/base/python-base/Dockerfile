@@ -3,7 +3,7 @@
 #########################################################
 
 ## https://hub.docker.com/_/alpine
-ARG ALPINE_TAG=3.23.4
+ARG ALPINE_TAG=3.24.1
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev

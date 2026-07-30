@@ -1,5 +1,5 @@
 ## https://hub.docker.com/_/alpine
-ARG ALPINE_TAG=3.22.4
+ARG ALPINE_TAG=3.24.1
 ## https://github.com/taskfile/task/releases
 ARG TASKFILE_VERSION=v3.50.0
 
