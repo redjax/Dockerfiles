@@ -2,9 +2,6 @@
 name: Run Renovate
 
 on:
-  push:
-    branches:
-      - tmp/renovate-test
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
@@ -50,7 +47,8 @@ jobs:
       autodiscover: false
       runner-image: ubuntu-latest
       renovate-author-email: "5534031+redjax@users.noreply.github.com"
-      base-branches: "tmp/renovate-test"
+      base-branches: "feat/renovate-regex"
+      ## Set to 'false' to use the main branch. This shuld only be 'true' while testing changes on a branch
       use-base-branch-config: true
     secrets:
       renovate-token: ${{ secrets.RENOVATE_TOKEN }}
