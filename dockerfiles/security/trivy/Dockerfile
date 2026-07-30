@@ -1,4 +1,4 @@
-ARG TRIVY_TAG=0.70.0
+ARG TRIVY_TAG=0.72.0
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
