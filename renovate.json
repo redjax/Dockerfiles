@@ -44,7 +44,7 @@
                 "^dockerfiles/.*/Dockerfile$"
             ],
             "matchStrings": [
-                "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+versioning=(?<versioning>\\S+))?(?:\\s+extractVersion=(?<extractVersion>[^\\n]+))?\\s*(?:\\r?\\n)ARG\\s+(?<argName>[A-Z0-9_]+)=(?<currentValue>[^\\s]+)"
+                "renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+versioning=(?<versioning>\\S+))?(?:\\s+extractVersion=(?<extractVersion>[^\\n]+))?\\s*\\nARG\\s+(?<argName>[A-Z0-9_]+)=(?<currentValue>[^\\s]+)"
             ],
             "datasourceTemplate": "{{datasource}}",
             "depNameTemplate": "{{depName}}",
@@ -52,18 +52,15 @@
             "extractVersionTemplate": "{{extractVersion}}"
         },
         {
-            "description": "image.yml upstream version + version_args/args for docker images",
+            "description": "image.yml upstream version for docker images",
             "fileMatch": [
                 "^dockerfiles/.*/image.yml$"
             ],
             "matchStrings": [
-                "upstream:\\s*\\n[\\s\\S]*?registry:\\s*\"(?<registry>docker)\"[\\s\\S]*?name:\\s*\"(?<depName>[^\"]+)\"[\\s\\S]*?version:\\s*\"(?<currentValue>[^\"]+)\"",
-                "version_args:\\s*\\n[\\s\\S]*?(?<argName>[A-Z0-9_]+):\\s*\"?(?<currentValue>[^\"]+)\"?",
-                "args:\\s*\\n[\\s\\S]*?(?<argName>[A-Z0-9_]+):\\s*\"?(?<currentValue>[^\"]+)\"?"
+                "upstream:\\s*\\n[\\s\\S]*?registry:\\s*\"(?<registry>docker)\"[\\s\\S]*?name:\\s*\"(?<depName>[^\"]+)\"[\\s\\S]*?version:\\s*\"(?<currentValue>[^\"]+)\""
             ],
             "datasourceTemplate": "docker",
-            "versioningTemplate": "docker",
-            "depNameTemplate": "{{#if depName}}{{depName}}{{else}}{{argName}}{{/if}}"
+            "versioningTemplate": "docker"
         }
     ]
 }
