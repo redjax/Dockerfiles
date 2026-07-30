@@ -22,7 +22,7 @@
             "matchManagers": [
                 "github-actions"
             ],
-            "matchPaths": [
+            "matchFileNames": [
                 ".github/workflows/**"
             ]
         }
