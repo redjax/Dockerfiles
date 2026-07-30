@@ -1,0 +1,29 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "helpers:pinGitHubActionDigests"
+    ],
+    "enabledManagers": [
+        "github-actions"
+    ],
+    "ignorePaths": [
+        "**/package.json",
+        "**/requirements.txt",
+        "**/pyproject.toml",
+        "**/go.mod",
+        "**/Cargo.toml",
+        "**/Dockerfile"
+    ],
+    "packageRules": [
+        {
+            "description": "GitHub workflow updates only",
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchPaths": [
+                ".github/workflows/**"
+            ]
+        }
+    ]
+}
