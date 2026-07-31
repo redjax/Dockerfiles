@@ -3,7 +3,7 @@
 ARG TERRAFORM_TAG=1.15.8
 ## https://github.com/terraform-linters/tflint/releases
 # renovate: datasource=github-releases depName=terraform-linters/tflint extractVersion=^v?(?<version>.*)$
-ARG TFLINT_VERSION=0.62.0
+ARG TFLINT_VERSION=0.64.0
 ## https://github.com/aquasecurity/tfsec/releases
 # renovate: datasource=github-releases depName=aquasecurity/tfsec extractVersion=^v?(?<version>.*)$
 ARG TFSEC_VERSION=1.28.14
