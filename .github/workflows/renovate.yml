@@ -41,8 +41,8 @@ jobs:
   renovate:
     uses: redjax/pipelinetemplates/.github/workflows/renovate.yml@32dbacfc32195d7b3c6ff3308c99eae9bde97986 # main
     with:
-      # mode: ${{ github.event_name == 'schedule' && 'run' || inputs.mode }}
-      mode: run
+      mode: ${{ github.event_name == 'schedule' && 'run' || inputs.mode }}
+      # mode: run
       log-level: ${{ inputs.log-level || 'info' }}
       repository: ${{ github.repository }}
       config-file: renovate.json
