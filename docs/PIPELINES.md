@@ -10,6 +10,8 @@ Pipeline logic lives in the [`scripts/`](../scripts/) directory wherever possibl
 
 - [Update \& Release Workflows](#update--release-workflows)
   - [Renovate workflow](#renovate-workflow)
+    - [Renovate Triggers](#renovate-triggers)
+    - [Renovate Trigger Diagram](#renovate-trigger-diagram)
   - [Build and publish](#build-and-publish)
   - [Trim images](#trim-images)
 - [Authentication](#authentication)
@@ -37,6 +39,36 @@ The [Renovate workflow](../.github/workflows/renovate.yml) runs Renovate against
   - Annotated `ARG` defaults in Dockerfiles.
 
 With automerge enabled, Renovate merges those PRs automatically once checks pass. This replaces the previous bespoke tag bump scripts and pipelines. The pipeline runs 4x daily to pick up Renovate changes, and triggers any time a push to `renovate/*` branch occurs. This chains Renovate actions so automated merging works more reliably.
+
+#### Renovate Triggers
+
+The Renovate pipeline has the following triggers:
+
+- Scheduled - Runs the pipeline 4x each day.
+- `renovate/*` branch pushes: When a `renovate/*` pipeline changes, it triggers Renovate to perform actions like auto-merges and rebases.
+- Manual - A `workflow_dispatch` triggers allows for running the pipeline manually with configurable options.
+
+#### Renovate Trigger Diagram
+
+Diagram showing the events that trigger the [`renovate.yml` pipeline](../.github/workflows/renovate.yml)
+
+```mermaid
+flowchart TD
+    subgraph RenovateTriggers["Renovate pipeline triggers"]
+        A["Scheduled cron (3:00, etc.)"] --> R
+        B["Manual run (workflow_dispatch)"] --> R
+        C["Optional: push to main or renovate/*"] --> R
+    end
+
+    R["Run Renovate workflow (.github/workflows/renovate.yml)"] --> C1[Read renovate.json]
+    C1 --> C2["Scan Dockerfiles and image.yml (dockerfile + custom.regex managers)"]
+    C2 --> C3["Create or update PRs (version bumps)"]
+    C3 --> C4["Mark PRs for automerge (packageRules)"]
+
+    C4 -->|PR merged to main| M[Push to main]
+    M --> BP["Build and publish workflow (.github/workflows/build-publish.yml)"]
+    BP --> I[Build and push updated images]
+```
 
 ### Build and publish
 
