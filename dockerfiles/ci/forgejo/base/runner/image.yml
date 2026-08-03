@@ -1,0 +1,19 @@
+---
+name: forgejo-runner-base
+category: ci
+description: Generic Forgejo Actions base image, with common tooling like cURL, SSH, npm, & more.
+publish: true
+context: dockerfiles/ci/forgejo/base/runner
+dockerfile: dockerfiles/ci/forgejo/base/runner/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/forgejo-runner-base
+upstream:
+  registry: docker
+  name: ubuntu
+  track: "24.04"
+  version: "24.04"
+version_args:
+  UBUNTU_VERSION: "24.04"
+  BASE_IMG_VERSION: "24.04"
+args:
+  UBUNTU_VERSION: "24.04"
+  BASE_IMG_VERSION: "24.04"
