@@ -6,7 +6,7 @@
 # ssh, docker.io client, and more.            #
 ###############################################
 
-ARG UBUNTU_VERSION=24.04
+ARG UBUNTU_VERSION=24.10
 
 FROM ubuntu:${UBUNTU_VERSION}
 
