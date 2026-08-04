@@ -5,7 +5,7 @@
 
 ## Releases: https://hub.docker.com/layers/library/docker/latest/
 # renovate: datasource=docker depName=docker versioning=semver
-ARG DOCKER_IMG_VER=29.7.0
+ARG DOCKER_IMG_VER=29.7.1
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
