@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: "Optional path to a single image directory"
+        description: "Optional path to a single image directory, i.e. dockerfiles/base/debian"
         required: false
         type: string
 
