@@ -83,9 +83,15 @@ RUN useradd \
  && echo "runner ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/runner
 
 ## Create Actions tool cache dir
-RUN mkdir -p /opt/hostedtoolcache \
-    /opt/hostedtoolcache/go \
- && chown -R runner:runner /opt/hostedtoolcache
+RUN mkdir -p \
+      /opt/hostedtoolcache \
+      /opt/hostedtoolcache/go \
+      /opt/hostedtoolcache/node \
+      /opt/hostedtoolcache/Python \
+      /home/runner/.cache \
+ && chown -R runner:runner \
+      /opt/hostedtoolcache \
+      /home/runner/.cache
 
 WORKDIR /workspace
 
