@@ -68,6 +68,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     docker.io \
  && rm -rf /var/lib/apt/lists/*
 
+## Node.js 24 + pnpm
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends nodejs \
+ && npm install -g pnpm@11 \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN node --version \
+ && npm --version \
+ && pnpm --version
+
+## Git configuration
+RUN git config --system --add safe.directory '*'
+
 ## Enable UTF-8 locale
 RUN locale-gen en_US.UTF-8
 
@@ -84,14 +98,13 @@ RUN useradd \
 
 ## Create Actions tool cache dir
 RUN mkdir -p \
-      /opt/hostedtoolcache \
-      /opt/hostedtoolcache/go \
-      /opt/hostedtoolcache/node \
-      /opt/hostedtoolcache/Python \
-      /home/runner/.cache \
+    /opt/hostedtoolcache/go \
+    /opt/hostedtoolcache/node \
+    /opt/hostedtoolcache/Python \
+    /home/runner/.cache \
  && chown -R runner:runner \
-      /opt/hostedtoolcache \
-      /home/runner/.cache
+    /opt/hostedtoolcache \
+    /home/runner/.cache
 
 WORKDIR /workspace
 
