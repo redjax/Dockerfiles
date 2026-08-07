@@ -1,0 +1,30 @@
+---
+name: forgejo-renovate
+category: automation
+description: Forgejo Actions image with Renovate CLI preinstalled.
+publish: true
+
+context: dockerfiles/automation/renovate
+dockerfile: dockerfiles/automation/renovate/Dockerfile
+
+registry_path: ghcr.io/redjax/dockerfiles/forgejo-renovate
+
+components:
+  renovate:
+    type: npm
+    name: renovate
+    track: 44
+    version: 44.14.8
+    arg: RENOVATE_VERSION
+
+upstream:
+  registry: npm
+  name: renovate
+  track: 44
+  version: 44.14.8
+
+version_args:
+  RENOVATE_VERSION: 44.14.8
+
+args:
+  RENOVATE_VERSION: 44.14.8
