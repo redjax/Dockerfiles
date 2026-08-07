@@ -1,5 +1,3 @@
-# https://github.com/renovatebot/renovate
-
 # renovate: datasource=npm depName=renovate versioning=node
 ARG RENOVATE_VERSION=44.14.8
 
@@ -19,17 +17,20 @@ ARG IMAGE_SOURCE
 USER root
 
 ENV NPM_CONFIG_PREFIX=/home/runner/.npm-global
-ENV PATH=/home/runner/.npm-global/bin:$PATH
+ENV PATH=/home/runner/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-RUN npm install -g renovate@${RENOVATE_VERSION} \
-    && renovate --version
-
-RUN chown -R runner:runner \
-    /home/runner/.npm-global
+RUN mkdir -p /home/runner/.npm-global \
+    && npm install -g renovate@${RENOVATE_VERSION} \
+    && renovate --version \
+    && chown -R runner:runner /home/runner/.npm-global
 
 WORKDIR /workspace
 
 USER runner
+
+RUN node --version \
+    && npm --version \
+    && renovate --version
 
 LABEL org.opencontainers.image.title="forgejo-renovate" \
       org.opencontainers.image.base.name="ghcr.io/redjax/dockerfiles/forgejo-runner-base:latest" \
@@ -39,4 +40,4 @@ LABEL org.opencontainers.image.title="forgejo-renovate" \
       org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/automation/renovate/README.md" \
       org.opencontainers.image.description="Forgejo Actions runner image with Renovate preinstalled."
 
-ENTRYPOINT ["/bin/bash"]
+CMD ["/bin/bash"]
