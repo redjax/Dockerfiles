@@ -15,7 +15,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    \
     ## Shell / system basics
     bash \
     ca-certificates \
@@ -51,10 +50,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-venv \
     \
-    ## Node
-    nodejs \
-    npm \
-    \
     ## Misc utilities
     rsync \
     file \
@@ -66,27 +61,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     \
     ## Docker client
     docker.io \
- && rm -rf /var/lib/apt/lists/*
-
-## Node.js 24 + pnpm
-RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
- && apt-get update \
- && apt-get install -y --no-install-recommends nodejs \
- && npm install -g pnpm@11 \
- && rm -rf /var/lib/apt/lists/*
-
-RUN node --version \
- && npm --version \
- && pnpm --version
-
-## Git configuration
-RUN git config --system --add safe.directory '*'
-
-## Enable UTF-8 locale
-RUN locale-gen en_US.UTF-8
-
-ENV LANG=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8
+    && rm -rf /var/lib/apt/lists/*
 
 ## Create Forgejo runner user
 RUN useradd \
@@ -94,7 +69,36 @@ RUN useradd \
     --shell /bin/bash \
     --groups sudo \
     runner \
- && echo "runner ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/runner
+    && echo "runner ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/runner
+
+## Node.js 24 + pnpm
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+## Create user-writeable Node cache dir
+RUN mkdir -p \
+    /home/runner/.npm-global \
+    /home/runner/.npm \
+    && chown -R runner:runner \
+    /home/runner/.npm-global \
+    /home/runner/.npm
+
+ENV NPM_CONFIG_PREFIX=/home/runner/.npm-global
+ENV PATH=/home/runner/.npm-global/bin:$PATH
+
+RUN corepack enable \
+    && corepack install --global pnpm@11
+
+## Git configuration
+RUN git config --system --add safe.directory '*'
+
+## Enable UTF-8 locale
+RUN locale-gen en_US.UTF-8
+
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 ## Create Actions tool cache dir
 RUN mkdir -p \
@@ -102,12 +106,20 @@ RUN mkdir -p \
     /opt/hostedtoolcache/node \
     /opt/hostedtoolcache/Python \
     /home/runner/.cache \
- && chown -R runner:runner \
+    && chown -R runner:runner \
     /opt/hostedtoolcache \
     /home/runner/.cache
 
 WORKDIR /workspace
 
 USER runner
+
+## Verify user can run node
+RUN node --version \
+    && npm --version \
+    && pnpm --version \
+    && which node \
+    && which npm \
+    && which pnpm
 
 CMD ["/bin/bash"]
