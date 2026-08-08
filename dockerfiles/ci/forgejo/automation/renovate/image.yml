@@ -4,8 +4,8 @@ category: automation
 description: Forgejo Actions image with Renovate CLI preinstalled.
 publish: true
 
-context: dockerfiles/automation/renovate
-dockerfile: dockerfiles/automation/renovate/Dockerfile
+context: dockerfiles/ci/forgejo/automation/renovate
+dockerfile: dockerfiles/ci/forgejo/automation/renovate/Dockerfile
 
 registry_path: ghcr.io/redjax/dockerfiles/forgejo-renovate
 
