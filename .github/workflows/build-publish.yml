@@ -11,9 +11,9 @@ name: Build and publish images
 on:
   push:
     branches: [main]
-    paths:
-      - "**/image.yml"
-      - "**/Dockerfile"
+    # paths:
+    #   - "**/image.yml"
+    #   - "**/Dockerfile"
 
   workflow_dispatch:
     inputs:
@@ -83,6 +83,7 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+
     outputs:
       empty: ${{ steps.buildlist.outputs.empty }}
       dry_run: ${{ steps.meta.outputs.dry_run }}
@@ -128,11 +129,11 @@ jobs:
 
           echo "Resolved build mode: event=${{ github.event_name }}, dry_run=${DRY_RUN}, force=${FORCE}, enable_publish=${ENABLE_PUBLISH}, pull=${PULL}, image=${IMAGE:-<all>}"
 
-          echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
-          echo "force=$FORCE" >> $GITHUB_OUTPUT
-          echo "image=$IMAGE" >> $GITHUB_OUTPUT
-          echo "enable_publish=$ENABLE_PUBLISH" >> $GITHUB_OUTPUT
-          echo "pull=$PULL" >> $GITHUB_OUTPUT
+          echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
+          echo "force=$FORCE" >> "$GITHUB_OUTPUT"
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+          echo "enable_publish=$ENABLE_PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "pull=$PULL" >> "$GITHUB_OUTPUT"
 
       - name: Detect changed files
         shell: bash
@@ -140,9 +141,26 @@ jobs:
           set -euo pipefail
 
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            git diff --name-only HEAD~1 HEAD > build_list.txt || true
+            if [[ "${{ github.event.before }}" =~ ^0+$ ]]; then
+              # Initial push: there is no previous commit to diff against.
+              git ls-files > build_list.txt
+            else
+              git diff --name-only \
+                "${{ github.event.before }}" \
+                "${{ github.sha }}" \
+                > build_list.txt
+            fi
           else
+            ## workflow_dispatch / workflow_call:
+            #  determine-images-to-build.sh will rely on --image-dir or --force.
             : > build_list.txt
+          fi
+
+          echo "Changed files:"
+          if [[ -s build_list.txt ]]; then
+            cat build_list.txt
+          else
+            echo "  (none)"
           fi
 
       - name: Determine images to build
@@ -155,8 +173,10 @@ jobs:
 
           ARGS=()
 
-          [[ -n "${{ steps.meta.outputs.image }}" ]] && \
+          if [[ -n "${{ steps.meta.outputs.image }}" ]]; then
             ARGS+=(--image-dir "${{ steps.meta.outputs.image }}")
+            ARGS+=(--force)
+          fi
 
           [[ "${{ steps.meta.outputs.force }}" == "true" ]] && \
             ARGS+=(--force)
@@ -166,9 +186,9 @@ jobs:
             build_list.txt
 
           if [[ -s build_list.txt ]]; then
-            echo "empty=false" >> $GITHUB_OUTPUT
+            echo "empty=false" >> "$GITHUB_OUTPUT"
           else
-            echo "empty=true" >> $GITHUB_OUTPUT
+            echo "empty=true" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -180,8 +200,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: plan
-    ## Skip runs on draft PR,
-    #  or when no changes are detected
+
+    ## Skip runs on draft PR or when no changes are detected
     if: >
       (github.event_name != 'pull_request' ||
       github.event.pull_request.draft == false)

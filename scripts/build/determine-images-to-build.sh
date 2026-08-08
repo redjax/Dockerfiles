@@ -19,41 +19,48 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --force)
-      force="true"
-      shift
-      ;;
-    --image-dir)
-      image_dir="${2:-}"
-      shift 2
-      ;;
-    --image-dir=*)
-      image_dir="${1#*=}"
-      shift
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      build_list_file="$1"
-      shift
-      ;;
+  --force)
+    force="true"
+    shift
+    ;;
+  --image-dir)
+    image_dir="${2:-}"
+    shift 2
+    ;;
+  --image-dir=*)
+    image_dir="${1#*=}"
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    build_list_file="$1"
+    shift
+    ;;
   esac
 done
 
-: > "$build_list_file"
+[[ -f "$build_list_file" ]] || {
+  echo "[ERROR] Missing build list: $build_list_file" >&2
+  exit 1
+}
 
 function is_publishable() {
   local manifest="$1"
+
   [[ "$(yq e '.publish // false' "$manifest")" == "true" ]]
 }
 
 function get_registry_ref() {
   local manifest="$1"
-  local registry_path tag
+  local registry_path
+  local tag
+
   registry_path="$(yq e '.registry_path' "$manifest")"
   tag="$(yq e '.upstream.version' "$manifest")"
+
   echo "${registry_path}:${tag}"
 }
 
@@ -64,80 +71,105 @@ function manifest_dir() {
 function image_exists_remote() {
   local ref="$1"
 
-  ## failure = treat as "does not exist"
+  ## Treat failures as "does not exist"
   docker buildx imagetools inspect "$ref" >/dev/null 2>&1
 }
 
 function changed_by_git() {
   local manifest="$1"
-  local dockerfile context changed_file
+  local changed_files="$2"
+  local dockerfile
+  local context
 
   dockerfile="$(yq e '.dockerfile // ""' "$manifest")"
   context="$(yq e '.context // ""' "$manifest")"
 
-  grep -Fxq "$manifest" ${build_list_file} && return 0
-  [[ -n "$dockerfile" ]] && grep -Fxq "$dockerfile" ${build_list_file} && return 0
+  ## image.yml itself changed
+  if grep -Fxq "$manifest" "$changed_files"; then
+    return 0
+  fi
 
+  ## Dockerfile changed
+  if [[ -n "$dockerfile" ]] && grep -Fxq "$dockerfile" "$changed_files"; then
+    return 0
+  fi
+
+  ## Anything under the build context changed
   if [[ -n "$context" ]]; then
-    grep -Fxq "$context" ${build_list_file} && return 0
-    grep -Fq "${context}/" ${build_list_file} && return 0
+    if grep -Fxq "$context" "$changed_files"; then
+      return 0
+    fi
+
+    if grep -Fq "${context}/" "$changed_files"; then
+      return 0
+    fi
   fi
 
   return 1
 }
 
-## Build changed files list
-changed_files_file="${build_list_file}"
-if [[ "$force" == "false" ]]; then
-  if git rev-parse --verify HEAD >/dev/null 2>&1; then
-    git diff --name-only HEAD~1..HEAD > "$changed_files_file" 2>/dev/null || true
-  else
-    git ls-files > "$changed_files_file"
-  fi
+## Preserve the incoming changed-file list before replacing it
+changed_files_file="$(mktemp)"
+
+cleanup() {
+  rm -f "$changed_files_file"
+}
+
+trap cleanup EXIT
+
+cp "$build_list_file" "$changed_files_file"
+
+## The output file is now rebuilt as a list of image directories.
+: >"$build_list_file"
+
+echo "Changed files:"
+if [[ -s "$changed_files_file" ]]; then
+  cat "$changed_files_file"
 else
-  : > "$changed_files_file"
+  echo "  <none>"
 fi
+
+echo ""
 
 search_root="."
 [[ -n "$image_dir" ]] && search_root="./$image_dir"
 
-mapfile -t manifests < <(find "$search_root" -name image.yml -type f | sort)
+mapfile -t manifests < <(
+  find "$search_root" -name image.yml -type f | sort
+)
 
 for manifest in "${manifests[@]}"; do
-(
-  set +e
+  (
+    set +e
 
-  is_publishable "$manifest" || exit 0
+    is_publishable "$manifest" || exit 0
 
-  dir="$(manifest_dir "$manifest")"
-  registry_ref="$(get_registry_ref "$manifest")"
+    dir="$(manifest_dir "$manifest")"
+    registry_ref="$(get_registry_ref "$manifest")"
 
-  publish_reason=""
+    ## Force mode
+    if [[ "$force" == "true" ]]; then
+      echo "$dir"
+      exit 0
+    fi
 
-  ## Force mode
-  if [[ "$force" == "true" ]]; then
-    echo "$dir"
-    exit 0
-  fi
+    ## First publish/new image
+    if ! image_exists_remote "$registry_ref"; then
+      echo "$dir"
+      exit 0
+    fi
 
-  ## First publish/new image
-  if ! image_exists_remote "$registry_ref"; then
-    publish_reason="first publish (missing remote image)"
-    echo "$dir"
-    exit 0
-  fi
+    ## Normal change detection
+    if changed_by_git "$manifest" "$changed_files_file"; then
+      echo "$dir"
+      exit 0
+    fi
+  ) || {
+    echo "[WARN] failed processing $manifest" >&2
+  }
+done | sort -u >"$build_list_file"
 
-  ## Normal change detection
-  if changed_by_git "$manifest"; then
-    publish_reason="git changes detected"
-    echo "$dir"
-    exit 0
-  fi
-
-) || {
-  echo "[WARN] failed processing $manifest"
-}
-done | sort -u > "$build_list_file"
+echo ""
 
 if [[ ! -s "$build_list_file" ]]; then
   echo "No containers to build."
