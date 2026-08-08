@@ -108,7 +108,7 @@ RUN set -eux; \
 
 ## Set Go env vars
 ENV PATH=/usr/local/go/bin:/home/runner/.npm-global/bin:$PATH
-ENV GOTOOLCHAIN=auto
+ENV GOTOOLCHAIN=local
 
 ## Runtime layer
 FROM tool-go AS run
