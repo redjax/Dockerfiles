@@ -36,6 +36,11 @@ RUN echo "Node version:" \
 RUN command -v npm \
   && npm --version
 
+## Print Go version
+RUN echo "Go version:" \
+    && command -v go \
+    && go version
+
 ## Print Renovate version
 RUN echo "Renovate version:" \
   && command -v renovate \
