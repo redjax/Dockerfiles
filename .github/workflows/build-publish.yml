@@ -40,6 +40,12 @@ on:
         default: false
         type: boolean
 
+      pull:
+        description: "Always pull base images before building"
+        required: false
+        default: true
+        type: boolean
+
   workflow_call:
     inputs:
       image:
@@ -60,6 +66,12 @@ on:
         default: false
         type: boolean
 
+      pull:
+        description: "Always pull base images before building"
+        required: false
+        default: true
+        type: boolean
+
 permissions:
   contents: read
   packages: write
@@ -77,6 +89,7 @@ jobs:
       force: ${{ steps.meta.outputs.force }}
       image: ${{ steps.meta.outputs.image }}
       enable_publish: ${{ steps.meta.outputs.enable_publish }}
+      pull: ${{ steps.meta.outputs.pull }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -96,6 +109,15 @@ jobs:
           FORCE="${{ inputs.force || false }}"
           IMAGE="${{ inputs.image || '' }}"
 
+          ## Pull base images by default.
+          #  For push/workflow_call, always pull.
+          #  For workflow_dispatch, respect user's input.
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            PULL="true"
+          else
+            PULL="${{ inputs.pull }}"
+          fi
+
           ## Publish by default on push to main.
           #  For workflow_dispatch/workflow_call, respect explicit inputs.
           if [[ "${{ github.event_name }}" == "push" ]]; then
@@ -104,12 +126,13 @@ jobs:
             ENABLE_PUBLISH="${{ inputs.enable_publish || false }}"
           fi
 
-          echo "Resolved publish mode: event=${{ github.event_name }}, dry_run=${DRY_RUN}, force=${FORCE}, enable_publish=${ENABLE_PUBLISH}, image=${IMAGE:-<all>}"
+          echo "Resolved build mode: event=${{ github.event_name }}, dry_run=${DRY_RUN}, force=${FORCE}, enable_publish=${ENABLE_PUBLISH}, pull=${PULL}, image=${IMAGE:-<all>}"
 
           echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
           echo "force=$FORCE" >> $GITHUB_OUTPUT
           echo "image=$IMAGE" >> $GITHUB_OUTPUT
           echo "enable_publish=$ENABLE_PUBLISH" >> $GITHUB_OUTPUT
+          echo "pull=$PULL" >> $GITHUB_OUTPUT
 
       - name: Detect changed files
         shell: bash
@@ -200,6 +223,9 @@ jobs:
 
           [[ "${{ needs.plan.outputs.enable_publish }}" == "true" ]] && \
             ARGS+=(--publish)
+
+          [[ "${{ needs.plan.outputs.pull }}" == "true" ]] && \
+            ARGS+=(--pull)
 
           ./scripts/build/build-and-publish-images.sh \
             "${ARGS[@]}" \
