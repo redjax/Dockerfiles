@@ -6,7 +6,10 @@
 # ssh, docker.io client, and more.            #
 ###############################################
 
+# renovate: datasource=docker depName=ubuntu
 ARG UBUNTU_VERSION=26.10
+
+# renovate: datasource=golang-version depName=go
 ARG GO_VERSION=1.25.6
 
 FROM ubuntu:${UBUNTU_VERSION}
