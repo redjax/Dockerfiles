@@ -98,7 +98,6 @@ RUN corepack enable \
     && corepack install --global pnpm@11
 
 ## Install Go
-
 RUN set -eux; \
   case "${TARGETARCH}" in \
     amd64) GO_ARCH="amd64" ;; \
