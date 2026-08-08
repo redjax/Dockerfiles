@@ -20,17 +20,18 @@ ENV NPM_CONFIG_PREFIX=/home/runner/.npm-global
 ENV PATH=/home/runner/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 RUN mkdir -p /home/runner/.npm-global \
-    && npm install -g renovate@${RENOVATE_VERSION} \
-    && renovate --version \
-    && chown -R runner:runner /home/runner/.npm-global
+    && npm install -g "renovate@${RENOVATE_VERSION}" \
+    && chown -R runner:runner /home/runner/.npm-global \
+    && command -v node \
+    && node --version \
+    && command -v npm \
+    && npm --version \
+    && command -v renovate \
+    && renovate --version
 
 WORKDIR /workspace
 
 USER runner
-
-RUN node --version \
-    && npm --version \
-    && renovate --version
 
 LABEL org.opencontainers.image.title="forgejo-renovate" \
       org.opencontainers.image.base.name="ghcr.io/redjax/dockerfiles/forgejo-runner-base:latest" \
