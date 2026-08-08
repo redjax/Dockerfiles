@@ -15,6 +15,7 @@ ARG IMAGE_VERSION
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE
 
+## Switch to container root user for setup
 USER root
 
 ## Configure npm paths
