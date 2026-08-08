@@ -80,12 +80,20 @@ function changed_by_git() {
   local changed_files="$2"
   local dockerfile
   local context
+  local manifest_rel
+  local dockerfile_rel
+
+  ## Normalize paths so Git paths and find paths are compared consistently.
+  manifest_rel="${manifest#./}"
 
   dockerfile="$(yq e '.dockerfile // ""' "$manifest")"
   context="$(yq e '.context // ""' "$manifest")"
 
+  dockerfile="${dockerfile#./}"
+  context="${context#./}"
+
   ## image.yml itself changed
-  if grep -Fxq "$manifest" "$changed_files"; then
+  if grep -Fxq "$manifest_rel" "$changed_files"; then
     return 0
   fi
 
@@ -94,13 +102,22 @@ function changed_by_git() {
     return 0
   fi
 
+  ## If dockerfile is relative to the build context, check that path too.
+  if [[ -n "$dockerfile" && -n "$context" ]]; then
+    dockerfile_rel="${context%/}/${dockerfile#./}"
+
+    if grep -Fxq "$dockerfile_rel" "$changed_files"; then
+      return 0
+    fi
+  fi
+
   ## Anything under the build context changed
   if [[ -n "$context" ]]; then
     if grep -Fxq "$context" "$changed_files"; then
       return 0
     fi
 
-    if grep -Fq "${context}/" "$changed_files"; then
+    if grep -Fq "${context%/}/" "$changed_files"; then
       return 0
     fi
   fi
@@ -135,7 +152,7 @@ search_root="."
 [[ -n "$image_dir" ]] && search_root="./$image_dir"
 
 mapfile -t manifests < <(
-  find "$search_root" -name image.yml -type f | sort
+  find "$search_root" -name image.yml -type f -print | sed 's#^\./##' | sort
 )
 
 for manifest in "${manifests[@]}"; do
@@ -158,6 +175,10 @@ for manifest in "${manifests[@]}"; do
       echo "$dir"
       exit 0
     fi
+
+    echo "Checking manifest: $manifest"
+    echo "  dockerfile: $(yq e '.dockerfile // ""' "$manifest")"
+    echo "  context:    $(yq e '.context // ""' "$manifest")"
 
     ## Normal change detection
     if changed_by_git "$manifest" "$changed_files_file"; then
