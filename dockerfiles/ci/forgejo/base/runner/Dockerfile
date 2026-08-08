@@ -6,11 +6,17 @@
 # ssh, docker.io client, and more.            #
 ###############################################
 
+# renovate: datasource=docker depName=ubuntu
 ARG UBUNTU_VERSION=26.10
+
+# renovate: datasource=golang-version depName=go
+ARG GO_VERSION=1.25.6
 
 FROM ubuntu:${UBUNTU_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG GO_VERSION
+ARG TARGETARCH
 
 ENV TZ=UTC
 
@@ -86,10 +92,28 @@ RUN mkdir -p \
     /home/runner/.npm
 
 ENV NPM_CONFIG_PREFIX=/home/runner/.npm-global
-ENV PATH=/home/runner/.npm-global/bin:$PATH
+ENV PATH=/usr/local/go/bin:/home/runner/.npm-global/bin:$PATH
 
 RUN corepack enable \
     && corepack install --global pnpm@11
+
+## Install Go
+RUN set -eux; \
+  case "${TARGETARCH}" in \
+    amd64) GO_ARCH="amd64" ;; \
+    arm64) GO_ARCH="arm64" ;; \
+    *) echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
+  esac; \
+  curl -fsSL \
+    "https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" \
+    -o /tmp/go.tar.gz; \
+  rm -rf /usr/local/go; \
+  tar -xzf /tmp/go.tar.gz -C /usr/local; \
+  rm -f /tmp/go.tar.gz; \
+  /usr/local/go/bin/go version
+
+ENV PATH=/usr/local/go/bin:/home/runner/.npm-global/bin:$PATH
+ENV GOTOOLCHAIN=auto
 
 ## Git configuration
 RUN git config --system --add safe.directory '*'
@@ -114,12 +138,14 @@ WORKDIR /workspace
 
 USER runner
 
-## Verify user can run node
+## Verify installed tooling
 RUN node --version \
     && npm --version \
     && pnpm --version \
+    && go version \
     && which node \
     && which npm \
-    && which pnpm
+    && which pnpm \
+    && which go
 
 CMD ["/bin/bash"]
