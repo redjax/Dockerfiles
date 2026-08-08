@@ -135,6 +135,34 @@ jobs:
           echo "enable_publish=$ENABLE_PUBLISH" >> "$GITHUB_OUTPUT"
           echo "pull=$PULL" >> "$GITHUB_OUTPUT"
 
+      - name: Detect changed files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            if [[ "${{ github.event.before }}" =~ ^0+$ ]]; then
+              # Initial push: there is no previous commit to diff against.
+              git ls-files > build_list.txt
+            else
+              git diff --name-only \
+                "${{ github.event.before }}" \
+                "${{ github.sha }}" \
+                > build_list.txt
+            fi
+          else
+            ## workflow_dispatch / workflow_call:
+            #  determine-images-to-build.sh will rely on --image-dir or --force.
+            : > build_list.txt
+          fi
+
+          echo "Changed files:"
+          if [[ -s build_list.txt ]]; then
+            cat build_list.txt
+          else
+            echo "  (none)"
+          fi
+
       - name: Determine images to build
         id: buildlist
         shell: bash
@@ -145,8 +173,10 @@ jobs:
 
           ARGS=()
 
-          [[ -n "${{ steps.meta.outputs.image }}" ]] && \
+          if [[ -n "${{ steps.meta.outputs.image }}" ]]; then
             ARGS+=(--image-dir "${{ steps.meta.outputs.image }}")
+            ARGS+=(--force)
+          fi
 
           [[ "${{ steps.meta.outputs.force }}" == "true" ]] && \
             ARGS+=(--force)
