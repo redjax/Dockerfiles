@@ -81,9 +81,7 @@ function changed_by_git() {
   local dockerfile
   local context
   local manifest_rel
-  local dockerfile_rel
 
-  ## Normalize paths so Git paths and find paths are compared consistently.
   manifest_rel="${manifest#./}"
 
   dockerfile="$(yq e '.dockerfile // ""' "$manifest")"
@@ -102,24 +100,9 @@ function changed_by_git() {
     return 0
   fi
 
-  ## If dockerfile is relative to the build context, check that path too.
-  if [[ -n "$dockerfile" && -n "$context" ]]; then
-    dockerfile_rel="${context%/}/${dockerfile#./}"
-
-    if grep -Fxq "$dockerfile_rel" "$changed_files"; then
-      return 0
-    fi
-  fi
-
   ## Anything under the build context changed
-  if [[ -n "$context" ]]; then
-    if grep -Fxq "$context" "$changed_files"; then
-      return 0
-    fi
-
-    if grep -Fq "${context%/}/" "$changed_files"; then
-      return 0
-    fi
+  if [[ -n "$context" ]] && grep -Fq "${context%/}/" "$changed_files"; then
+    return 0
   fi
 
   return 1
@@ -176,9 +159,9 @@ for manifest in "${manifests[@]}"; do
       exit 0
     fi
 
-    echo "Checking manifest: $manifest"
-    echo "  dockerfile: $(yq e '.dockerfile // ""' "$manifest")"
-    echo "  context:    $(yq e '.context // ""' "$manifest")"
+    echo "Checking manifest: $manifest" >&2
+    echo "  dockerfile: $(yq e '.dockerfile // ""' "$manifest")" >&2
+    echo "  context:    $(yq e '.context // ""' "$manifest")" >&2
 
     ## Normal change detection
     if changed_by_git "$manifest" "$changed_files_file"; then
