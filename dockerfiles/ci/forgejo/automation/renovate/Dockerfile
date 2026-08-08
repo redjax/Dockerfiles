@@ -6,6 +6,7 @@ ARG IMAGE_VERSION=dev
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE="local-build"
 
+## Use forgejo-runner-base as base layer
 FROM ghcr.io/redjax/dockerfiles/forgejo-runner-base:latest
 
 ## Import args from outer layer
@@ -16,18 +17,28 @@ ARG IMAGE_SOURCE
 
 USER root
 
+## Configure npm paths
 ENV NPM_CONFIG_PREFIX=/home/runner/.npm-global
 ENV PATH=/home/runner/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+## Install renovate with npm & print versions
 RUN mkdir -p /home/runner/.npm-global \
-    && npm install -g "renovate@${RENOVATE_VERSION}" \
-    && chown -R runner:runner /home/runner/.npm-global \
-    && command -v node \
-    && node --version \
-    && command -v npm \
-    && npm --version \
-    && command -v renovate \
-    && renovate --version
+  && npm install -g "renovate@${RENOVATE_VERSION}" \
+  && chown -R runner:runner /home/runner/.npm-global
+
+## Print Node version
+RUN echo "Node version:" \
+  && command -v node \
+  && node --version
+
+## Print NPM version
+RUN command -v npm \
+  && npm --version
+
+## Print Renovate version
+RUN echo "Renovate version:" \
+  && command -v renovate \
+  && renovate --version
 
 WORKDIR /workspace
 
