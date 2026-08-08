@@ -9,23 +9,27 @@ set -euo pipefail
 # only publish if different.                       #
 #                                                  #
 # Use --force to always publish.                   #
+# Use --pull to always pull before build.          #
 ####################################################
 
 build_list_file="build_list.txt"
 dry_run="${DRY_RUN:-false}"
 force="${FORCE:-false}"
 enable_publishing="${PUBLISH:-false}"
+pull_images="${PULL:-false}"
 
 function usage() {
   cat <<EOF
 Usage:
   $0 [OPTIONS] [BUILD_LIST_FILE]
 
-Builds and publishes container images listed in a build list file.
+Description:
 
-Each entry in the build list should be a directory containing an image.yml
-manifest. The script builds the image, compares its digest with the remote
-registry, and only pushes if the image has changed (unless --force is used).
+  Builds and publishes container images listed in a build list file.
+
+  Each entry in the build list should be a directory containing an image.yml
+  manifest. The script builds the image, compares its digest with the remote
+  registry, and only pushes if the image has changed (unless --force is used).
 
 Arguments:
   BUILD_LIST_FILE   File containing image directories to process (default: build_list.txt)
@@ -36,63 +40,73 @@ Options:
   -f, --file PATH   Path to build list file (same as positional arg)
   --file=PATH       Same as above
   --publish         Enable publishing to the container registry (default: false)
+  --pull            Always pull images before starting build (default: false)
   -h, --help        Show this help message
 
 Behavior:
-  - Skips entries without image.yml or with 'publish: false'
-  - Builds images using ./scripts/build/build-image.sh
-  - Tags images as:
-    - <registry_path>:<version>
-    - <registry_path>:latest
-    - <registry_path>:<git-sha>
-  - Compares local vs remote digests before pushing (unless --force)
+
+- Skips entries without image.yml or with 'publish: false'
+- Builds images using ./scripts/build/build-image.sh
+- Tags images as:
+  - <registry_path>:
+  - <registry_path>:latest
+  - <registry_path>:
+- Compares local vs remote digests before pushing (unless --force)
 
 Environment:
   DRY_RUN=true           Equivalent to --dry-run
   FORCE=true             Equivalent to --force
   PUBLISH=true           Equivalent to --publish
   GITHUB_SHA             Used for short SHA tagging (falls back to git)
+  PULL=true              Equivalent to --pull
 
-Notes:
-  - build list entries must be directories, not image.yml paths
-  - requires: docker, docker buildx, yq, jq, git
+Requirements:
+  - docker
+  - docker buildx
+  - yq
+  - jq
+  - git
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    --dry-run)
-      dry_run="true"
-      shift
-      ;;
-    --force)
-      force="true"
-      shift
-      ;;
-    -f|--file)
-      build_list_file="${2:-}"
-      shift 2
-      ;;
-    --file=*)
-      build_list_file="${1#*=}"
-      shift
-      ;;
-    -P|--publish)
-      enable_publishing="true"
-      shift
-      ;;
-    -*)
-      echo "[ERROR] Unknown option: $1" >&2
-      exit 1
-      ;;
-    *)
-      build_list_file="$1"
-      shift
-      ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  --dry-run)
+    dry_run="true"
+    shift
+    ;;
+  --force)
+    force="true"
+    shift
+    ;;
+  -f | --file)
+    build_list_file="${2:-}"
+    shift 2
+    ;;
+  --file=*)
+    build_list_file="${1#*=}"
+    shift
+    ;;
+  -P | --publish)
+    enable_publishing="true"
+    shift
+    ;;
+  --pull)
+    pull_images="true"
+    shift
+    ;;
+  -*)
+    echo "[ERROR] Unknown option: $1" >&2
+    exit 1
+    ;;
+  *)
+    build_list_file="$1"
+    shift
+    ;;
   esac
 done
 
@@ -101,7 +115,10 @@ short_sha="${GITHUB_SHA:-$(git rev-parse --short HEAD 2>/dev/null || echo local)
 short_sha="${short_sha:0:7}"
 
 ## Check for build manifest file
-[[ -f "$build_list_file" ]] || { echo "[ERROR] Missing build list: $build_list_file" >&2; exit 1; }
+[[ -f "$build_list_file" ]] || {
+  echo "[ERROR] Missing build list: $build_list_file" >&2
+  exit 1
+}
 
 ## Ensure file is not empty
 if [[ ! -s "$build_list_file" ]]; then
@@ -120,7 +137,7 @@ function get_local_digest() {
 }
 
 echo "Processing ${build_list_file} for container images to build"
-echo "dry run: $dry_run, publish to container registry: $enable_publishing"
+echo "dry run: $dry_run, publish to container registry: $enable_publishing, pull base images: $pull_images"
 
 while IFS= read -r image_dir; do
   [[ -n "$image_dir" ]] || continue
@@ -142,7 +159,7 @@ while IFS= read -r image_dir; do
   ## Read build args from image.yml
   declare -A build_args_map
   build_args=()
-  
+
   ## Base args
   while IFS= read -r key; do
     [[ -n "$key" ]] || continue
@@ -164,11 +181,18 @@ while IFS= read -r image_dir; do
     build_args+=(--build-arg "${key}=${build_args_map[$key]}")
   done
 
+  # Build optional arguments for build-image.sh.
+  build_options=()
+
+  if [[ "$pull_images" == "true" ]]; then
+    build_options+=(--pull)
+  fi
+
   echo ""
   echo "[+] Building $name from $manifest"
 
   if [[ "$dry_run" == "true" ]]; then
-    echo "[DRY RUN] ./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --description $description --tag $tag ${build_args[*]}"
+    echo "[DRY RUN] ./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --description $description --tag $tag ${build_options[*]} ${build_args[*]}"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${tag}"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:latest"
     echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${short_sha}"
@@ -188,12 +212,12 @@ while IFS= read -r image_dir; do
     if [[ -n "$remote_digest" ]]; then
       echo "Remote digest for ${registry_path}:${tag}: $remote_digest"
     else
-      echo "Remote digest for ${registry_path}:${tag}: <not found>"
+      echo "Remote digest for ${registry_path}:${tag}: "
     fi
   fi
 
   if [[ "$dry_run" == "true" ]]; then
-    echo "[DRY RUN] build-image.sh --context $context --dockerfile $dockerfile --name $name --tag $tag"
+    echo "[DRY RUN] build-image.sh --context $context --dockerfile $dockerfile --name $name --tag $tag ${build_options[*]}"
   else
     ./scripts/build/build-image.sh \
       --context "$context" \
@@ -201,6 +225,7 @@ while IFS= read -r image_dir; do
       --name "$name" \
       --tag "$tag" \
       --description "$description" \
+      "${build_options[@]}" \
       "${build_args[@]}"
   fi
 
@@ -208,7 +233,7 @@ while IFS= read -r image_dir; do
   if [[ -n "$local_digest" ]]; then
     echo "Local digest for ${name}:${tag}: $local_digest"
   else
-    echo "Local digest for ${name}:${tag}: <not found>"
+    echo "Local digest for ${name}:${tag}: "
   fi
 
   if [[ "$force" != "true" && -n "$remote_digest" && -n "$local_digest" && "$remote_digest" == "$local_digest" ]]; then
@@ -226,6 +251,7 @@ while IFS= read -r image_dir; do
       echo "[DRY RUN] docker push ${registry_path}:latest"
       echo "[DRY RUN] docker push ${registry_path}:${short_sha}"
     fi
+
   else
     docker tag "${name}:${tag}" "${registry_path}:${tag}"
     docker tag "${name}:${tag}" "${registry_path}:latest"
@@ -237,4 +263,5 @@ while IFS= read -r image_dir; do
       docker push "${registry_path}:${short_sha}"
     fi
   fi
-done < "$build_list_file"
+
+done <"$build_list_file"

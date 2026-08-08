@@ -15,11 +15,29 @@ set -euo pipefail
 function usage() {
   cat <<'EOF'
 Usage:
-  build-image.sh --context PATH --dockerfile PATH --name NAME --tag TAG [--description DESCRIPTION] [--registry-prefix PREFIX] [--build-arg KEY=VAL ...]
+  build-image.sh --context PATH --dockerfile PATH --name NAME --tag TAG [--description DESCRIPTION] [--registry-prefix PREFIX] [--build-arg KEY=VAL ...] [--pull]
 
 Examples:
-  build-image.sh --context dockerfiles/base/alpine --dockerfile dockerfiles/base/alpine/Dockerfile --name alpine-base --tag 3.22.4
-  ALPINE_TAG=3.22.4 build-image.sh --context dockerfiles/base/alpine --dockerfile dockerfiles/base/alpine/Dockerfile --name alpine-base --tag "$ALPINE_TAG" --build-arg ALPINE_TAG="$ALPINE_TAG"
+  - Build Alpine base image:
+
+      build-image.sh \
+        --context dockerfiles/base/alpine \
+        --dockerfile dockerfiles/base/alpine/Dockerfile \
+        --name alpine-base \
+        --tag 3.22.4 \
+        ALPINE_TAG=3.22.4
+    
+  - Build Alpine base image, and always pull first:
+
+      build-image.sh \
+        --context \
+        dockerfiles/base/alpine \
+        --dockerfile dockerfiles/base/alpine/Dockerfile \
+        --name alpine-base \
+        --tag "$ALPINE_TAG" \
+        --build-arg \
+        --pull \
+        ALPINE_TAG="$ALPINE_TAG"
 EOF
 }
 
@@ -30,59 +48,88 @@ IMAGE_TAG=""
 REGISTRY_PREFIX=""
 BUILD_ARGS=()
 DESCRIPTION=""
+PULL_IMAGES="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --context)
-      CONTEXT="$2"
-      shift 2
-      ;;
-    --dockerfile)
-      DOCKERFILE="$2"
-      shift 2
-      ;;
-    --name)
-      IMAGE_NAME="$2"
-      shift 2
-      ;;
-    --tag)
-      IMAGE_TAG="$2"
-      shift 2
-      ;;
-    --registry-prefix)
-      REGISTRY_PREFIX="$2"
-      shift 2
-      ;;
-    --description)
-      DESCRIPTION="$2"
-      shift 2
-      ;;
-    --build-arg)
-      BUILD_ARGS+=("--build-arg" "$2")
-      shift 2
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "[ERROR] Unknown argument: $1" >&2
-      usage >&2
-      exit 1
-      ;;
+  --context)
+    CONTEXT="$2"
+    shift 2
+    ;;
+  --dockerfile)
+    DOCKERFILE="$2"
+    shift 2
+    ;;
+  --name)
+    IMAGE_NAME="$2"
+    shift 2
+    ;;
+  --tag)
+    IMAGE_TAG="$2"
+    shift 2
+    ;;
+  --registry-prefix)
+    REGISTRY_PREFIX="$2"
+    shift 2
+    ;;
+  --description)
+    DESCRIPTION="$2"
+    shift 2
+    ;;
+  --build-arg)
+    BUILD_ARGS+=("--build-arg" "$2")
+    shift 2
+    ;;
+  --pull)
+    PULL_IMAGES="true"
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "[ERROR] Unknown argument: $1" >&2
+    usage >&2
+    exit 1
+    ;;
   esac
 done
 
-[[ -n "$CONTEXT" ]] || { echo "[ERROR] --context is required" >&2; exit 1; }
-[[ -n "$DOCKERFILE" ]] || { echo "[ERROR] --dockerfile is required" >&2; exit 1; }
-[[ -n "$IMAGE_NAME" ]] || { echo "[ERROR] --name is required" >&2; exit 1; }
-[[ -n "$IMAGE_TAG" ]] || { echo "[ERROR] --tag is required" >&2; exit 1; }
+[[ -n "$CONTEXT" ]] || {
+  echo "[ERROR] --context is required" >&2
+  exit 1
+}
+[[ -n "$DOCKERFILE" ]] || {
+  echo "[ERROR] --dockerfile is required" >&2
+  exit 1
+}
+[[ -n "$IMAGE_NAME" ]] || {
+  echo "[ERROR] --name is required" >&2
+  exit 1
+}
+[[ -n "$IMAGE_TAG" ]] || {
+  echo "[ERROR] --tag is required" >&2
+  exit 1
+}
 
 FULL_IMAGE_NAME="${REGISTRY_PREFIX}${IMAGE_NAME}"
 
-echo "Building ${FULL_IMAGE_NAME}:${IMAGE_TAG}"
+## Set Docker build flags
+BUILD_OPTIONS=()
+
+echo
+echo "[INFO] Building image: ${FULL_IMAGE_NAME}:${IMAGE_TAG}"
+
+if [[ "$PULL_IMAGES" == "true" ]]; then
+  echo "[INFO] --pull detected: Docker build will always attempt a pull before building"
+  BUILD_ARGS+=("--pull")
+fi
+
+echo
 
 docker build \
+  "${BUILD_OPTIONS[@]}" \
   -f "$DOCKERFILE" \
   -t "${FULL_IMAGE_NAME}:${IMAGE_TAG}" \
   --label "description=${DESCRIPTION}" \
