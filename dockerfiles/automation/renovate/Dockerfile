@@ -1,6 +1,6 @@
 ## https://hub.docker.com/r/renovate/renovate/
 # renovate: datasource=docker depName=renovate/renovate versioning=docker
-ARG RENOVATE_TAG=44.14.3-full
+ARG RENOVATE_TAG=44.14.10-full
 ## https://hub.docker.com/_/debian
 # renovate: datasource=docker depName=debian versioning=docker
 ARG DEBIAN_TAG=13.6-slim
