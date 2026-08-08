@@ -18,10 +18,6 @@ ARG IMAGE_SOURCE
 ## Switch to container root user for setup
 USER root
 
-## Configure npm paths
-ENV NPM_CONFIG_PREFIX=/home/runner/.npm-global
-ENV PATH=/usr/local/go/bin:/home/runner/.npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
 ## Install renovate with npm & print versions
 RUN mkdir -p /home/runner/.npm-global \
   && npm install -g "renovate@${RENOVATE_VERSION}" \
