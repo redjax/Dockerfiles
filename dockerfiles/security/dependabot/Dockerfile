@@ -4,7 +4,7 @@ ARG ALPINE_TAG=3.24.1
 
 ## https://github.com/dependabot/cli/releases
 # renovate: datasource=github-releases depName=dependabot/cli extractVersion=^v?(?<version>.*)$
-ARG DEPENDABOT_VERSION=v1.91.0
+ARG DEPENDABOT_VERSION=1.92.0
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
