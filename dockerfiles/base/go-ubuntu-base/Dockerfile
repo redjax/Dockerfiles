@@ -17,7 +17,7 @@ ARG GORELEASER_VERSION=2.16.0
 ARG GOLANGCI_LINT_VERSION=2.12.2
 ## https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 # renovate: datasource=github-tags depName=golang/tools versioning=semver
-ARG GOIMPORTS_VERSION=v0.46.0
+ARG GOIMPORTS_VERSION=v0.49.0
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
