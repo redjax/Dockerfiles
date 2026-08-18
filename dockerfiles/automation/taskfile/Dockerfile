@@ -3,7 +3,7 @@
 ARG ALPINE_TAG=3.24.1
 ## https://github.com/taskfile/task/releases
 # renovate: datasource=github-releases depName=go-task/task extractVersion=^v(?<version>.*)$
-ARG TASKFILE_VERSION=3.52.0
+ARG TASKFILE_VERSION=3.53.1
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
