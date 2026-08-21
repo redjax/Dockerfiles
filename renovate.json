@@ -41,7 +41,7 @@
             ],
             "automerge": true,
             "automergeType": "pr",
-            "automergeStrategy": "merge-commit"
+            "automergeStrategy": "auto"
         }
     ],
     "customManagers": [
