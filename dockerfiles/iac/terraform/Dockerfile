@@ -1,6 +1,6 @@
 ## https://hub.docker.com/r/hashicorp/terraform
 # renovate: datasource=docker depName=hashicorp/terraform versioning=semver
-ARG TERRAFORM_TAG=1.15.9
+ARG TERRAFORM_TAG=1.16.0
 ## https://github.com/terraform-linters/tflint/releases
 # renovate: datasource=github-releases depName=terraform-linters/tflint extractVersion=^v?(?<version>.*)$
 ARG TFLINT_VERSION=0.62.0
