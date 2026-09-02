@@ -1,6 +1,24 @@
 {
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "helpers:pinGitHubActionDigests",
+        ":dependencyDashboard"
+    ],
+    "enabledManagers": [
+        "github-actions",
+        "dockerfile",
+        "custom.regex"
+    ],
     "platformAutomerge": true,
     "packageRules": [
+        {
+            "description": "Use Docker versioning for Docker image tags",
+            "matchDatasources": [
+                "docker"
+            ],
+            "versioning": "docker"
+        },
         {
             "description": "Automerge Docker image updates",
             "matchDatasources": [
@@ -12,7 +30,7 @@
             "automergeStrategy": "auto"
         },
         {
-            "description": "Automerge GitHub Actions digest updates",
+            "description": "Automerge GitHub Actions dependency updates",
             "matchManagers": [
                 "github-actions"
             ],
