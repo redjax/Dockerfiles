@@ -37,26 +37,29 @@ function get_latest_version() {
   local track="$3"
 
   case "$registry" in
-    docker)
-      dockerhub_latest_version_tag "$name" "$track"
-      ;;
-    ghcr)
-      ghcr_latest_version_tag "$name" "$track"
-      ;;
-    gitlab)
-      gitlab_latest_version_tag "$name" "$track"
-      ;;
-    acr)
-      acr_latest_version_tag "$name" "$track"
-      ;;
-    manual)
-      ## No automatic updates
-      echo ""
-      ;;
-    *)
-      echo "[ERROR] Unsupported upstream.registry: $registry" >&2
-      exit 1
-      ;;
+  docker)
+    dockerhub_latest_version_tag "$name" "$track"
+    ;;
+  ghcr)
+    ghcr_latest_version_tag "$name" "$track"
+    ;;
+  gitlab)
+    gitlab_latest_version_tag "$name" "$track"
+    ;;
+  acr)
+    acr_latest_version_tag "$name" "$track"
+    ;;
+  npm)
+    npm_latest_version_tag "$name" "$track"
+    ;;
+  manual)
+    ## No automatic updates
+    echo ""
+    ;;
+  *)
+    echo "[ERROR] Unsupported upstream.registry: $registry" >&2
+    exit 1
+    ;;
   esac
 }
 
@@ -78,6 +81,7 @@ source "${LIB_DIR}/dockerhub.sh"
 source "${LIB_DIR}/ghcr.sh"
 source "${LIB_DIR}/gitlab.sh"
 source "${LIB_DIR}/acr.sh"
+source "${LIB_DIR}/npm.sh"
 
 ## Parse CLI arguments
 FILE=""
@@ -86,37 +90,43 @@ GH_TOKEN="${GITHUB_TOKEN:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --file)
-      FILE="$2"
-      shift 2
-      ;;
-    --dry-run)
-      DRY_RUN=true
-      shift
-      ;;
-    --github-token)
-      GH_TOKEN="$2"
-      shift 2
-      ;;
-    --github-token=*)
-      GH_TOKEN="${1#*=}"
-      shift
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "[ERROR] Unknown argument: $1" >&2
-      usage >&2
-      exit 1
-      ;;
+  --file)
+    FILE="$2"
+    shift 2
+    ;;
+  --dry-run)
+    DRY_RUN=true
+    shift
+    ;;
+  --github-token)
+    GH_TOKEN="$2"
+    shift 2
+    ;;
+  --github-token=*)
+    GH_TOKEN="${1#*=}"
+    shift
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  *)
+    echo "[ERROR] Unknown argument: $1" >&2
+    usage >&2
+    exit 1
+    ;;
   esac
 done
 
 ## Validate input
-[[ -n "$FILE" ]] || { echo "[ERROR] --file is required" >&2; exit 1; }
-[[ -f "$FILE" ]] || { echo "[ERROR] File not found: $FILE" >&2; exit 1; }
+[[ -n "$FILE" ]] || {
+  echo "[ERROR] --file is required" >&2
+  exit 1
+}
+[[ -f "$FILE" ]] || {
+  echo "[ERROR] File not found: $FILE" >&2
+  exit 1
+}
 
 ## Read manifest fields
 registry="$(yq e '.upstream.registry' "$FILE")"
@@ -124,10 +134,22 @@ name="$(yq e '.upstream.name' "$FILE")"
 track="$(yq e '.upstream.track' "$FILE")"
 current="$(yq e '.upstream.version' "$FILE")"
 
-[[ -n "$registry" && "$registry" != "null" ]] || { echo "[ERROR] .upstream.registry missing in $FILE" >&2; exit 1; }
-[[ -n "$name" && "$name" != "null" ]] || { echo "[ERROR] .upstream.name missing in $FILE" >&2; exit 1; }
-[[ -n "$track" && "$track" != "null" ]] || { echo "[ERROR] .upstream.track missing in $FILE" >&2; exit 1; }
-[[ -n "$current" && "$current" != "null" ]] || { echo "[ERROR] .upstream.version missing in $FILE" >&2; exit 1; }
+[[ -n "$registry" && "$registry" != "null" ]] || {
+  echo "[ERROR] .upstream.registry missing in $FILE" >&2
+  exit 1
+}
+[[ -n "$name" && "$name" != "null" ]] || {
+  echo "[ERROR] .upstream.name missing in $FILE" >&2
+  exit 1
+}
+[[ -n "$track" && "$track" != "null" ]] || {
+  echo "[ERROR] .upstream.track missing in $FILE" >&2
+  exit 1
+}
+[[ -n "$current" && "$current" != "null" ]] || {
+  echo "[ERROR] .upstream.version missing in $FILE" >&2
+  exit 1
+}
 
 ## Determine latest upstream version
 latest="$(get_latest_version "$registry" "$name" "$track")"
@@ -175,12 +197,12 @@ while IFS= read -r component; do
   identifier=""
 
   case "$type" in
-    dockerhub)
-      identifier="$(yq e ".components.${component}.name" "$FILE")"
-      ;;
-    github_release)
-      identifier="$(yq e ".components.${component}.repo" "$FILE")"
-      ;;
+  dockerhub)
+    identifier="$(yq e ".components.${component}.name" "$FILE")"
+    ;;
+  github_release)
+    identifier="$(yq e ".components.${component}.repo" "$FILE")"
+    ;;
   esac
 
   latest_comp="$(resolve_component_version "$type" "$identifier" "$track")"
@@ -235,12 +257,12 @@ while IFS= read -r component; do
 
   identifier=""
   case "$type" in
-    dockerhub)
-      identifier="$(yq e ".components.${component}.name" "$FILE")"
-      ;;
-    github_release)
-      identifier="$(yq e ".components.${component}.repo" "$FILE")"
-      ;;
+  dockerhub)
+    identifier="$(yq e ".components.${component}.name" "$FILE")"
+    ;;
+  github_release)
+    identifier="$(yq e ".components.${component}.repo" "$FILE")"
+    ;;
   esac
 
   latest_comp="$(resolve_component_version "$type" "$identifier" "$track")"
@@ -257,7 +279,7 @@ while IFS= read -r component; do
 done < <(yq e '.components | keys | .[]' "$FILE" 2>/dev/null || true)
 
 ## Apply update
-yq e "$update_expr" "$FILE" > "$tmpfile"
+yq e "$update_expr" "$FILE" >"$tmpfile"
 mv "$tmpfile" "$FILE"
 trap - EXIT
 
