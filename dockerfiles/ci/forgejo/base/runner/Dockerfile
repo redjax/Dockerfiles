@@ -7,7 +7,7 @@
 ###############################################
 
 # renovate: datasource=docker depName=ubuntu
-ARG UBUNTU_VERSION=26.10
+ARG UBUNTU_VERSION=stonking-20260705
 
 # renovate: datasource=golang-version depName=go
 ARG GO_VERSION=1.27.0

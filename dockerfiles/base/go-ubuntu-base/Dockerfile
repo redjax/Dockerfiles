@@ -4,7 +4,7 @@
 ###############################################
 
 # renovate: datasource=docker depName=ubuntu versioning=semver
-ARG UBUNTU_VERSION=26.10
+ARG UBUNTU_VERSION=stonking-20260705
 
 ## https://go.dev/dl/
 # renovate: datasource=github-releases depName=golang/go extractVersion=^go(?<version>.*)$

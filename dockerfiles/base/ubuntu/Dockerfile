@@ -1,6 +1,6 @@
 ## https://hub.docker.com/_/ubuntu
 # renovate: datasource=docker depName=ubuntu versioning=semver
-ARG UBUNTU_TAG=26.10
+ARG UBUNTU_TAG=stonking-20260705
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
