@@ -1,37 +1,20 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": [
-        "config:recommended",
-        "helpers:pinGitHubActionDigests",
-        ":dependencyDashboard"
-    ],
-    "enabledManagers": [
-        "github-actions",
-        "dockerfile",
-        "custom.regex"
-    ],
     "platformAutomerge": true,
     "packageRules": [
         {
-            "description": "GitHub workflow updates only",
-            "matchManagers": [
-                "github-actions"
-            ],
-            "matchFileNames": [
-                ".github/workflows/**"
-            ]
-        },
-        {
-            "description": "Docker image tag updates",
+            "description": "Automerge Docker image updates",
             "matchDatasources": [
                 "docker"
             ],
-            "versioning": "docker"
+            "automerge": true,
+            "automergeType": "pr",
+            "platformAutomerge": true,
+            "automergeStrategy": "auto"
         },
         {
-            "description": "Automerge all dependency updates",
-            "matchPackageNames": [
-                "*"
+            "description": "Automerge GitHub Actions digest updates",
+            "matchManagers": [
+                "github-actions"
             ],
             "automerge": true,
             "automergeType": "pr",
