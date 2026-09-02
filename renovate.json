@@ -10,10 +10,26 @@
         "dockerfile",
         "custom.regex"
     ],
+    "ignorePaths": [
+        "**/package.json",
+        "**/requirements.txt",
+        "**/pyproject.toml",
+        "**/go.mod",
+        "**/Cargo.toml"
+    ],
     "platformAutomerge": true,
     "packageRules": [
         {
-            "description": "Use Docker versioning for Docker image tags",
+            "description": "GitHub workflow updates only",
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchFileNames": [
+                ".github/workflows/**"
+            ]
+        },
+        {
+            "description": "Docker image tag updates",
             "matchDatasources": [
                 "docker"
             ],
@@ -30,7 +46,7 @@
             "automergeStrategy": "auto"
         },
         {
-            "description": "Automerge GitHub Actions dependency updates",
+            "description": "Automerge GitHub Actions updates",
             "matchManagers": [
                 "github-actions"
             ],
@@ -38,6 +54,36 @@
             "automergeType": "pr",
             "platformAutomerge": true,
             "automergeStrategy": "auto"
+        }
+    ],
+    "customManagers": [
+        {
+            "customType": "regex",
+            "description": "Dockerfile ARG version variables annotated with renovate comments",
+            "managerFilePatterns": [
+                "/(^|/)Dockerfile$/",
+                "/(^|/)Dockerfile\\.[^/]*$/",
+                "/^dockerfiles/.*/Dockerfile$/"
+            ],
+            "matchStrings": [
+                "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+versioning=(?<versioning>\\S+))?(?:\\s+extractVersion=(?<extractVersion>[^\\n]+))?\\s*\\nARG\\s+(?<argName>[A-Z0-9_]+)=(?<currentValue>[^\\s]+)"
+            ],
+            "datasourceTemplate": "{{datasource}}",
+            "depNameTemplate": "{{depName}}",
+            "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}docker{{/if}}",
+            "extractVersionTemplate": "{{extractVersion}}"
+        },
+        {
+            "customType": "regex",
+            "description": "image.yml upstream version for docker images",
+            "managerFilePatterns": [
+                "/^dockerfiles/.*/image.yml$/"
+            ],
+            "matchStrings": [
+                "upstream:\\s*\\n[\\s\\S]*?registry:\\s*(?<registry>docker)[\\s\\S]*?name:\\s*(?<depName>[^\\n]+)[\\s\\S]*?version:\\s*(?<currentValue>[^\\n]+)"
+            ],
+            "datasourceTemplate": "docker",
+            "versioningTemplate": "docker"
         }
     ]
 }
