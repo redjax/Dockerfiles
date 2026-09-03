@@ -10,28 +10,35 @@ function npm_latest_version_tag() {
       "https://registry.npmjs.org/${name}"
   )"
 
+  local candidates=""
+
   if [[ -z "$track" || "$track" == "null" ]]; then
-    jq -r '
-      .versions
-      | keys[]
-      | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))
-    ' <<<"$metadata" |
-      sort -V |
-      tail -n1
+    candidates="$(
+      jq -r '
+        .versions
+        | keys[]
+        | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))
+      ' <<<"$metadata"
+    ) || return 1
+  else
+    candidates="$(
+      jq -r --arg track "$track" '
+        .versions
+        | keys[]
+        | select(
+            test(
+              "^" +
+              ($track | gsub("\\."; "\\\\.")) +
+              "\\.[0-9]+\\.[0-9]+$"
+            )
+          )
+      ' <<<"$metadata"
+    ) || return 1
+  fi
+
+  if [[ -z "$candidates" ]]; then
     return 0
   fi
 
-  jq -r --arg track "$track" '
-    .versions
-    | keys[]
-    | select(
-        test(
-          "^" +
-          ($track | gsub("\\."; "\\\\.")) +
-          "\\.[0-9]+\\.[0-9]+$"
-        )
-      )
-  ' <<<"$metadata" |
-    sort -V |
-    tail -n1
+  sort -V <<<"$candidates" | tail -n1
 }
