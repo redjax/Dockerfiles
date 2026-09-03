@@ -10,7 +10,7 @@ upstream:
   registry: docker
   name: aquasec/trivy
   track: 0.70
-  version: 0.70.0
+  version: 0.74.0
 version_args:
   TRIVY_TAG: 0.70.0
 args:
