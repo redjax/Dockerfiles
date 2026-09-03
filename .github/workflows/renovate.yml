@@ -9,7 +9,8 @@ on:
     - cron: "0 21 * * *"
   push:
     branches:
-      - "renovate/*"
+      - main
+  #     - "renovate/*"
   workflow_dispatch:
     inputs:
       mode:
