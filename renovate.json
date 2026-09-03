@@ -17,6 +17,14 @@
         "**/go.mod",
         "**/Cargo.toml"
     ],
+    "hostRules": [
+        {
+            "hostType": "docker",
+            "matchHost": "docker.io",
+            "username": "{{ secrets.DOCKERHUB_USERNAME }}",
+            "password": "{{ secrets.DOCKERHUB_TOKEN }}"
+        }
+    ],
     "platformAutomerge": true,
     "packageRules": [
         {
@@ -75,7 +83,7 @@
         },
         {
             "customType": "regex",
-            "description": "image.yml upstream version for docker images",
+            "description": "image.yml upstream version for Docker images",
             "managerFilePatterns": [
                 "/^dockerfiles/.*/image.yml$/"
             ],
