@@ -197,7 +197,7 @@ while IFS= read -r component; do
   identifier=""
 
   case "$type" in
-  dockerhub)
+  dockerhub | npm)
     identifier="$(yq e ".components.${component}.name" "$FILE")"
     ;;
   github_release)
@@ -257,7 +257,7 @@ while IFS= read -r component; do
 
   identifier=""
   case "$type" in
-  dockerhub)
+  dockerhub | npm)
     identifier="$(yq e ".components.${component}.name" "$FILE")"
     ;;
   github_release)
