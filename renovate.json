@@ -80,18 +80,6 @@
             "depNameTemplate": "{{depName}}",
             "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}docker{{/if}}",
             "extractVersionTemplate": "{{extractVersion}}"
-        },
-        {
-            "customType": "regex",
-            "description": "image.yml upstream version for Docker images",
-            "managerFilePatterns": [
-                "/^dockerfiles/.*/image.yml$/"
-            ],
-            "matchStrings": [
-                "upstream:\\s*\\n[\\s\\S]*?registry:\\s*(?<registry>docker)[\\s\\S]*?name:\\s*(?<depName>[^\\n]+)[\\s\\S]*?version:\\s*(?<currentValue>[^\\n]+)"
-            ],
-            "datasourceTemplate": "docker",
-            "versioningTemplate": "docker"
         }
     ]
 }
