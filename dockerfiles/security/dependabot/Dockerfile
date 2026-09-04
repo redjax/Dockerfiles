@@ -11,7 +11,7 @@ ARG IMAGE_VERSION=dev
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE="local-build"
 
-FROM alpine:3.24
+FROM alpine:${ALPINE_TAG}
 
 ## Import args from outer layer
 ARG DEPENDABOT_VERSION
