@@ -69,7 +69,7 @@
             ],
             "datasourceTemplate": "{{datasource}}",
             "depNameTemplate": "{{depName}}",
-            "versioningTemplate": "{{versioning}}",
+            "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}",
             "extractVersionTemplate": "{{extractVersion}}"
         }
     ]
