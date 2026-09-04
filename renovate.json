@@ -17,14 +17,6 @@
         "**/go.mod",
         "**/Cargo.toml"
     ],
-    "hostRules": [
-        {
-            "hostType": "docker",
-            "matchHost": "docker.io",
-            "username": "{{ secrets.DOCKERHUB_USERNAME }}",
-            "password": "{{ secrets.DOCKERHUB_TOKEN }}"
-        }
-    ],
     "platformAutomerge": true,
     "packageRules": [
         {
@@ -67,31 +59,18 @@
     "customManagers": [
         {
             "customType": "regex",
-            "description": "Dockerfile ARG version variables annotated with renovate comments",
+            "description": "Versioned Dockerfile ARGs",
             "managerFilePatterns": [
                 "/(^|/)Dockerfile$/",
-                "/(^|/)Dockerfile\\.[^/]*$/",
-                "/^dockerfiles/.*/Dockerfile$/"
+                "/(^|/)Dockerfile\\.[^/]*$/"
             ],
             "matchStrings": [
                 "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+versioning=(?<versioning>\\S+))?(?:\\s+extractVersion=(?<extractVersion>[^\\n]+))?\\s*\\nARG\\s+(?<argName>[A-Z0-9_]+)=(?<currentValue>[^\\s]+)"
             ],
             "datasourceTemplate": "{{datasource}}",
             "depNameTemplate": "{{depName}}",
-            "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}docker{{/if}}",
+            "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}",
             "extractVersionTemplate": "{{extractVersion}}"
-        },
-        {
-            "customType": "regex",
-            "description": "image.yml upstream version for Docker images",
-            "managerFilePatterns": [
-                "/^dockerfiles/.*/image.yml$/"
-            ],
-            "matchStrings": [
-                "upstream:\\s*\\n[\\s\\S]*?registry:\\s*(?<registry>docker)[\\s\\S]*?name:\\s*(?<depName>[^\\n]+)[\\s\\S]*?version:\\s*(?<currentValue>[^\\n]+)"
-            ],
-            "datasourceTemplate": "docker",
-            "versioningTemplate": "docker"
         }
     ]
 }

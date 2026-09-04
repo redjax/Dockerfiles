@@ -12,7 +12,6 @@ on:
   push:
     branches: [main]
     # paths:
-    #   - "**/image.yml"
     #   - "**/Dockerfile"
 
   workflow_dispatch:
