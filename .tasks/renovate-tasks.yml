@@ -1,0 +1,74 @@
+---
+version: "3"
+
+vars:
+  RENOVATE_IMG_TAG: '{{.RENOVATE_IMG_TAG | default "latest"}}'
+  RENOVATE_LOG_LEVEL: '{{.RENOVATE_LOG_LEVEL | default "info"}}'
+
+tasks:
+  local:
+    desc: "Do a local dry-run of your Renovate config."
+    cmds:
+      - |
+        set -euo pipefail
+
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+        echo "    Renovate image tag: renovate/renovate:{{.RENOVATE_IMG_TAG}}"
+
+        cd "$REPO_ROOT"
+
+        echo "==> Running local Renovate dry-run"
+        echo "    Repository: $REPO_ROOT"
+        echo "    Renovate image tag: renovate/renovate:{{.RENOVATE_IMG_TAG}}"
+        echo
+
+        docker run --rm \
+          -e RENOVATE_GITHUB_COM_TOKEN \
+          -e LOG_LEVEL={{.RENOVATE_LOG_LEVEL}} \
+          -v "$REPO_ROOT:/repo" \
+          -w /repo \
+          renovate/renovate:{{.RENOVATE_IMG_TAG}} \
+          --platform=local \
+          --dry-run=lookup \
+          --config-validation-error=true
+
+  extract:
+    desc: "Extract dependencies using Renovate without performing lookups."
+    cmds:
+      - |
+        set -euo pipefail
+
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+        echo "    Renovate image tag: renovate/renovate:{{.RENOVATE_IMG_TAG}}"
+        echo
+
+        docker run --rm \
+          -e RENOVATE_GITHUB_COM_TOKEN \
+          -e LOG_LEVEL={{.RENOVATE_LOG_LEVEL}} \
+          -v "$REPO_ROOT:/repo" \
+          -w /repo \
+          renovate/renovate:{{.RENOVATE_IMG_TAG}} \
+          --platform=local \
+          --dry-run=extract | less
+
+  validate:
+    desc: "Validate the local Renovate configuration."
+    cmds:
+      - |
+        set -euo pipefail
+
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+        echo "==> Validating Renovate configuration"
+        echo "    Repository: $REPO_ROOT"
+        echo "    Renovate image tag: renovate/renovate:{{.RENOVATE_IMG_TAG}}"
+        echo
+
+        docker run --rm \
+          -v "$REPO_ROOT:/repo" \
+          -w /repo \
+          -e LOG_LEVEL={{.RENOVATE_LOG_LEVEL}} \
+          renovate/renovate:{{.RENOVATE_IMG_TAG}} \
+          --platform=local \
+          --config-validation-error=true \
+          --dry-run=extract | less
