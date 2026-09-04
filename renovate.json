@@ -17,14 +17,6 @@
         "**/go.mod",
         "**/Cargo.toml"
     ],
-    "hostRules": [
-        {
-            "hostType": "docker",
-            "matchHost": "docker.io",
-            "username": "{{ secrets.DOCKERHUB_USERNAME }}",
-            "password": "{{ secrets.DOCKERHUB_TOKEN }}"
-        }
-    ],
     "platformAutomerge": true,
     "packageRules": [
         {
