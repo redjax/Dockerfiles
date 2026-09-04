@@ -2,9 +2,11 @@
 # Opinionated GitLab CI image for Astro site pipelines. #
 #########################################################
 
-## https://hub.docker.com/layers/library/docker/latest/
-# datasource=docker depName=docker versioning=semver
+# renovate: datasource=docker depName=docker versioning=semver
 ARG DOCKER_IMG_VER=29.5.0
+
+# renovate: datasource=pypi depName=bump-my-version
+ARG BUMP_MY_VERSION=1.5.1
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
@@ -33,7 +35,7 @@ RUN apk add --no-cache \
 ENV PATH="/root/.local/bin:$PATH"
 
 RUN pipx ensurepath \
-    && pipx install bump-my-version
+    && pipx install "bump-my-version==${BUMP_MY_VERSION}"
 
 WORKDIR /work
 
