@@ -67,18 +67,17 @@
     "customManagers": [
         {
             "customType": "regex",
-            "description": "Dockerfile ARG version variables annotated with renovate comments",
+            "description": "Versioned Dockerfile ARGs",
             "managerFilePatterns": [
                 "/(^|/)Dockerfile$/",
-                "/(^|/)Dockerfile\\.[^/]*$/",
-                "/^dockerfiles/.*/Dockerfile$/"
+                "/(^|/)Dockerfile\\.[^/]*$/"
             ],
             "matchStrings": [
                 "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+versioning=(?<versioning>\\S+))?(?:\\s+extractVersion=(?<extractVersion>[^\\n]+))?\\s*\\nARG\\s+(?<argName>[A-Z0-9_]+)=(?<currentValue>[^\\s]+)"
             ],
             "datasourceTemplate": "{{datasource}}",
             "depNameTemplate": "{{depName}}",
-            "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}docker{{/if}}",
+            "versioningTemplate": "{{versioning}}",
             "extractVersionTemplate": "{{extractVersion}}"
         }
     ]
