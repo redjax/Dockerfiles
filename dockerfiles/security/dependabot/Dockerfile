@@ -1,8 +1,6 @@
-## https://hub.docker.com/_/alpine
 # renovate: datasource=docker depName=alpine versioning=semver
 ARG ALPINE_TAG=3.24.1
 
-## https://github.com/dependabot/cli/releases
 # renovate: datasource=github-releases depName=dependabot/cli extractVersion=^v?(?<version>.*)$
 ARG DEPENDABOT_VERSION=1.92.0
 
