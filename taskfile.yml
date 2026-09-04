@@ -16,3 +16,8 @@ includes:
   git:
     taskfile: .tasks/git-tasks.yml
     dir: .
+
+  ## Renovate tasks
+  renovate:
+    taskfile: .tasks/renovate-tasks.yml
+    dir: .
