@@ -37,7 +37,11 @@ Options:
   -h, --help          Show this help message.
 
 Examples:
-  ${0##*/} --outpt
+  ${0##*/} \
+    --output path/to/build_list.txt \
+    --base <tag, hash, or branch> \
+    --head <tag, hash, or branch> \
+    --force
 EOF
 }
 
