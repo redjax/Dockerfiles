@@ -75,8 +75,12 @@ ARG GOIMPORTS_VERSION
 ARG GOLANGCI_LINT_VERSION
 
 ## Install goimports (formatting & import management)
-RUN go install golang.org/x/tools/cmd/goimports@${GOIMPORTS_VERSION} && \
-    install -m 0755 /root/go/bin/goimports /usr/local/bin/goimports
+RUN go install \
+      "golang.org/x/tools/cmd/goimports@v${GOIMPORTS_VERSION}" \
+    && install \
+      -m 0755 \
+      /root/go/bin/goimports \
+      /usr/local/bin/goimports
 
 ## Install golangci-lint
 RUN set -eux; \
