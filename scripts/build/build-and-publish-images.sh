@@ -225,28 +225,37 @@ while IFS= read -r image_dir; do
   fi
 
   ## Build the image using the image directory as its context.
-  docker build \
+  # docker build \
+  #   --file "$dockerfile" \
+  #   --tag "$local_tag" \
+  #   --label "description=${description}" \
+  #   "${pull_args[@]}" \
+  #   "${build_args[@]}" \
+  #   "$image_dir"
+
+  # ## Do not tag or push when publishing is disabled.
+  # if [[ "$enable_publishing" != "true" ]]; then
+  #   echo "[INFO] Publishing disabled for $image_name"
+  #   echo "[INFO] Local image: $local_tag"
+  #   continue
+  # fi
+
+  # ## Apply the mutable latest tag and immutable Git SHA tag.
+  # docker tag "$local_tag" "$latest_ref"
+  # docker tag "$local_tag" "$sha_ref"
+
+  # ## Publish both tags to GHCR.
+  # docker push "$latest_ref"
+  # docker push "$sha_ref"
+
+  docker buildx build \
     --file "$dockerfile" \
-    --tag "$local_tag" \
-    --label "description=${description}" \
-    "${pull_args[@]}" \
-    "${build_args[@]}" \
+    --tag "$latest_ref" \
+    --tag "$sha_ref" \
+    --cache-from "type=gha,scope=${image_name}" \
+    --cache-to "type=gha,mode=max,scope=${image_name}" \
+    --push \
     "$image_dir"
-
-  ## Do not tag or push when publishing is disabled.
-  if [[ "$enable_publishing" != "true" ]]; then
-    echo "[INFO] Publishing disabled for $image_name"
-    echo "[INFO] Local image: $local_tag"
-    continue
-  fi
-
-  ## Apply the mutable latest tag and immutable Git SHA tag.
-  docker tag "$local_tag" "$latest_ref"
-  docker tag "$local_tag" "$sha_ref"
-
-  ## Publish both tags to GHCR.
-  docker push "$latest_ref"
-  docker push "$sha_ref"
 
   echo "[INFO] Published:"
   echo "       $latest_ref"
