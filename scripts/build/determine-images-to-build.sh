@@ -26,7 +26,7 @@ head_ref="${HEAD_REF:-HEAD}"
 function usage() {
   cat <<EOF
 Usage:
-  $0 [OPTIONS]
+  ${0##*/} [OPTIONS]
 
 Options:
   --image-root PATH    Root directory containing Dockerfiles. Default: dockerfiles
