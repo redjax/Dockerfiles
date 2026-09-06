@@ -1,46 +1,56 @@
 ---
-############################################
-# Scan repository for publishable images   #
-# and build/push changed container images. #
-#                                          #
-# Builds only images with publish: true.   #
-############################################
-
 name: Build and publish images
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "dockerfiles/**"
+      - "scripts/build/**"
+      - ".github/workflows/build-publish.yml"
+
+  merge_group:
+    types:
+      - checks_requested
+
   push:
-    branches: [main]
-    # paths:
-    #   - "**/Dockerfile"
+    branches:
+      - main
+    paths:
+      - "dockerfiles/**"
+      - "scripts/build/**"
+      - ".github/workflows/build-publish.yml"
 
   workflow_dispatch:
     inputs:
       image:
-        description: "Optional path to a single image directory, i.e. dockerfiles/base/debian"
+        description: >-
+          Optional image directory, for example
+          dockerfiles/base/debian
         required: false
         type: string
 
       dry_run:
-        description: "Dry run - describe actions without taking them"
+        description: Describe actions without building or publishing
         required: false
         default: false
         type: boolean
 
       force:
-        description: "Force - Find all images, regardless of change status"
+        description: Build every image instead of only changed images
         required: false
         default: false
         type: boolean
 
       enable_publish:
-        description: "Publish - enable/disable publishing to container registry"
+        description: Publish images to GHCR
         required: false
         default: false
         type: boolean
 
       pull:
-        description: "Always pull base images before building"
+        description: Always pull base images before building
         required: false
         default: true
         type: boolean
@@ -48,25 +58,30 @@ on:
   workflow_call:
     inputs:
       image:
+        description: Optional image directory to build
         required: false
         type: string
 
       dry_run:
+        description: Describe actions without building or publishing
         required: false
+        default: false
         type: boolean
 
       force:
+        description: Build every image instead of only changed images
         required: false
+        default: false
         type: boolean
 
       enable_publish:
-        description: "Publish - enable/disable publishing to container registry"
+        description: Publish images to GHCR
         required: false
         default: false
         type: boolean
 
       pull:
-        description: "Always pull base images before building"
+        description: Always pull base images before building
         required: false
         default: true
         type: boolean
@@ -77,175 +92,230 @@ permissions:
 
 jobs:
   plan:
-    ## Skip runs on draft PR
+    name: Determine images
+    runs-on: ubuntu-latest
+
+    ## Do not run build validation for draft PRs.
+    #  The workflow still appears in the PR, but the job is skipped.
     if: >
       github.event_name != 'pull_request' ||
       github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
 
     outputs:
       empty: ${{ steps.buildlist.outputs.empty }}
       dry_run: ${{ steps.meta.outputs.dry_run }}
-      force: ${{ steps.meta.outputs.force }}
-      image: ${{ steps.meta.outputs.image }}
       enable_publish: ${{ steps.meta.outputs.enable_publish }}
       pull: ${{ steps.meta.outputs.pull }}
+      image: ${{ steps.meta.outputs.image }}
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: mikefarah/yq@c14f446382944492701b16c1ddb48bb9dbe683e3 # v4.53.6
-
-      ## Normalize inputs so push / dispatch / call all behave the same
       - name: Normalize inputs
         id: meta
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_IMAGE: ${{ inputs.image }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          INPUT_ENABLE_PUBLISH: ${{ inputs.enable_publish }}
+          INPUT_PULL: ${{ inputs.pull }}
         run: |
           set -euo pipefail
 
-          DRY_RUN="${{ inputs.dry_run || false }}"
-          FORCE="${{ inputs.force || false }}"
-          IMAGE="${{ inputs.image || '' }}"
+          image="${INPUT_IMAGE:-}"
+          dry_run="${INPUT_DRY_RUN:-false}"
+          pull="${INPUT_PULL:-true}"
+          enable_publish="${INPUT_ENABLE_PUBLISH:-false}"
 
-          ## Pull base images by default.
-          #  For push/workflow_call, always pull.
-          #  For workflow_dispatch, respect user's input.
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            PULL="true"
-          else
-            PULL="${{ inputs.pull }}"
+          ## Pull base images for normal repository builds.
+          #  Manual dispatch and workflow_call use their explicit input.
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            pull="true"
           fi
 
-          ## Publish by default on push to main.
-          #  For workflow_dispatch/workflow_call, respect explicit inputs.
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            ENABLE_PUBLISH="true"
-          else
-            ENABLE_PUBLISH="${{ inputs.enable_publish || false }}"
+          ## Only pushes to main publish by default.
+          #  Pull requests and merge groups must never publish.
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            enable_publish="true"
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            enable_publish="false"
+          elif [[ "$EVENT_NAME" == "merge_group" ]]; then
+            enable_publish="false"
           fi
 
-          echo "Resolved build mode: event=${{ github.event_name }}, dry_run=${DRY_RUN}, force=${FORCE}, enable_publish=${ENABLE_PUBLISH}, pull=${PULL}, image=${IMAGE:-<all>}"
+          echo "Resolved build configuration:"
+          echo "  event:           $EVENT_NAME"
+          echo "  image:           ${image:-<changed images>}"
+          echo "  dry run:         $dry_run"
+          echo "  publish:         $enable_publish"
+          echo "  pull:            $pull"
 
-          echo "dry_run=$DRY_RUN" >> "$GITHUB_OUTPUT"
-          echo "force=$FORCE" >> "$GITHUB_OUTPUT"
-          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
-          echo "enable_publish=$ENABLE_PUBLISH" >> "$GITHUB_OUTPUT"
-          echo "pull=$PULL" >> "$GITHUB_OUTPUT"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$dry_run" >> "$GITHUB_OUTPUT"
+          echo "enable_publish=$enable_publish" >> "$GITHUB_OUTPUT"
+          echo "pull=$pull" >> "$GITHUB_OUTPUT"
 
-      - name: Detect changed files
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            if [[ "${{ github.event.before }}" =~ ^0+$ ]]; then
-              # Initial push: there is no previous commit to diff against.
-              git ls-files > build_list.txt
-            else
-              git diff --name-only \
-                "${{ github.event.before }}" \
-                "${{ github.sha }}" \
-                > build_list.txt
-            fi
-          else
-            ## workflow_dispatch / workflow_call:
-            #  determine-images-to-build.sh will rely on --image-dir or --force.
-            : > build_list.txt
-          fi
-
-          echo "Changed files:"
-          if [[ -s build_list.txt ]]; then
-            cat build_list.txt
-          else
-            echo "  (none)"
-          fi
-
-      - name: Determine images to build
+      - name: Determine changed images
         id: buildlist
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_IMAGE: ${{ inputs.image }}
+          INPUT_FORCE: ${{ inputs.force }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
 
-          chmod +x ./scripts/build/determine-images-to-build.sh
+          : > build_list.txt
 
-          ARGS=()
+          ## A manually selected image bypasses Git change detection.
+          #  The build script will still validate Dockerfile and metadata.yml.
+          if [[ -n "$INPUT_IMAGE" ]]; then
+            echo "$INPUT_IMAGE" > build_list.txt
 
-          if [[ -n "${{ steps.meta.outputs.image }}" ]]; then
-            ARGS+=(--image-dir "${{ steps.meta.outputs.image }}")
-            ARGS+=(--force)
+          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
+            echo "Determining images changed by pull request."
+
+            ./scripts/build/determine-images-to-build.sh \
+              --base "$PR_BASE_SHA" \
+              --head "$PR_HEAD_SHA" \
+              --output build_list.txt
+
+          elif [[ "$EVENT_NAME" == "merge_group" ]]; then
+            echo "Determining images changed by merge group."
+
+            ## merge_group does not provide a reliably recognized expression
+            #  for base_sha in workflow YAML. Compare the synthetic merge-group
+            #  commit against the current main branch instead.
+            git fetch origin main --no-tags
+
+            base_sha="$(git rev-parse origin/main)"
+
+            ./scripts/build/determine-images-to-build.sh \
+              --base "$base_sha" \
+              --head "$GITHUB_SHA" \
+              --output build_list.txt
+
+          elif [[ "$EVENT_NAME" == "push" ]]; then
+            echo "Determining images changed by push to main."
+
+            ## The first push to a repository has an all-zero before SHA.
+            #  In that case, build every discovered image.
+            if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
+              ./scripts/build/determine-images-to-build.sh \
+                --force \
+                --output build_list.txt
+            else
+              ./scripts/build/determine-images-to-build.sh \
+                --base "$BEFORE_SHA" \
+                --head "$GITHUB_SHA" \
+                --output build_list.txt
+            fi
+
+          else
+            ## workflow_dispatch and workflow_call.
+            #  With no image and no force option, there is nothing to build.
+            if [[ "${INPUT_FORCE:-false}" == "true" ]]; then
+              echo "Force mode enabled."
+
+              ./scripts/build/determine-images-to-build.sh \
+                --force \
+                --output build_list.txt
+            else
+              echo "No image or force option supplied."
+            fi
           fi
 
-          [[ "${{ steps.meta.outputs.force }}" == "true" ]] && \
-            ARGS+=(--force)
-
-          ./scripts/build/determine-images-to-build.sh \
-            "${ARGS[@]}" \
-            build_list.txt
-
+          echo
+          echo "Final build list:"
           if [[ -s build_list.txt ]]; then
+            cat build_list.txt
             echo "empty=false" >> "$GITHUB_OUTPUT"
           else
+            echo "  <none>"
             echo "empty=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        if: steps.buildlist.outputs.empty != 'true'
+      - name: Upload build list
+        if: steps.buildlist.outputs.empty == 'false'
+        uses: actions/upload-artifact@v4
         with:
           name: build-list
           path: build_list.txt
+          if-no-files-found: error
 
   build:
-    runs-on: ubuntu-latest
+    name: Build selected images
     needs: plan
+    runs-on: ubuntu-latest
 
-    ## Skip runs on draft PR or when no changes are detected
     if: >
-      (github.event_name != 'pull_request' ||
-      github.event.pull_request.draft == false)
-      && needs.plan.outputs.empty == 'false'
+      needs.plan.outputs.empty == 'false'
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Download build list
+        uses: actions/download-artifact@v4
         with:
           name: build-list
 
-      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
-        if: needs.plan.outputs.dry_run != 'true'
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        if: needs.plan.outputs.enable_publish == 'true' &&
+          needs.plan.outputs.dry_run != 'true'
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Display build list
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "Images selected for this run:"
+          cat build_list.txt
+
       - name: Build and publish images
         shell: bash
+        env:
+          PUBLISH: ${{ needs.plan.outputs.enable_publish }}
+          PULL: ${{ needs.plan.outputs.pull }}
+          DRY_RUN: ${{ needs.plan.outputs.dry_run }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
 
           chmod +x ./scripts/build/build-and-publish-images.sh
 
-          ARGS=()
+          args=()
 
-          [[ "${{ needs.plan.outputs.dry_run }}" == "true" ]] && \
-            ARGS+=(--dry-run)
+          if [[ "$DRY_RUN" == "true" ]]; then
+            args+=(--dry-run)
+          fi
 
-          [[ "${{ needs.plan.outputs.force }}" == "true" ]] && \
-            ARGS+=(--force)
+          if [[ "$PUBLISH" == "true" ]]; then
+            args+=(--publish)
+          fi
 
-          [[ "${{ needs.plan.outputs.enable_publish }}" == "true" ]] && \
-            ARGS+=(--publish)
-
-          [[ "${{ needs.plan.outputs.pull }}" == "true" ]] && \
-            ARGS+=(--pull)
+          if [[ "$PULL" == "true" ]]; then
+            args+=(--pull)
+          fi
 
           ./scripts/build/build-and-publish-images.sh \
-            "${ARGS[@]}" \
+            "${args[@]}" \
             build_list.txt
