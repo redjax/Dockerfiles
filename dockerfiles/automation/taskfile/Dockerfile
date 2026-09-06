@@ -34,15 +34,21 @@ ARG IMAGE_SOURCE
 
 WORKDIR /work
 
-RUN curl -fsSL \
-      "https://github.com/go-task/task/releases/download/${TASKFILE_VERSION}/task_linux_amd64.tar.gz" \
-      -o /tmp/taskfile.tar.gz \
-    && mkdir /tmp/taskfile \
-    && tar -xzvf /tmp/taskfile.tar.gz -C /tmp/taskfile \
-    && rm -rf /tmp/taskfile.tar.gz \
-    && chmod +x /tmp/taskfile/task \
-    && mv /tmp/taskfile/task /usr/local/bin/task \
-    && rm -rf /tmp/taskfile
+RUN curl --fail --show-error --location \
+      "https://github.com/go-task/task/releases/download/v${TASKFILE_VERSION}/task_linux_amd64.tar.gz" \
+      --output /tmp/taskfile.tar.gz \
+    && mkdir -p /tmp/taskfile \
+    && tar --extract \
+      --gzip \
+      --file /tmp/taskfile.tar.gz \
+      --directory /tmp/taskfile \
+    && install \
+      --mode=0755 \
+      /tmp/taskfile/task \
+      /usr/local/bin/task \
+    && rm -rf \
+      /tmp/taskfile.tar.gz \
+      /tmp/taskfile
 
 ## Metadata
 LABEL org.opencontainers.image.title="taskfile" \
