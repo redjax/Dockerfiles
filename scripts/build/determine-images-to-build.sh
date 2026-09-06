@@ -29,12 +29,15 @@ Usage:
   ${0##*/} [OPTIONS]
 
 Options:
-  --image-root PATH    Root directory containing Dockerfiles. Default: dockerfiles
-  --output PATH        Output file containing image directories. Default: build_list.txt
-  --base REF           Git base revision used for change detection.
-  --head REF           Git head revision used for change detection. Default: HEAD
-  --force              Select every image instead of checking changes.
-  -h, --help           Show this help message.
+  --image-root  PATH  Root directory containing Dockerfiles. Default: dockerfiles
+  --output      PATH  Output file containing image directories. Default: build_list.txt
+  --base        REF   Git base revision used for change detection.
+  --head        REF   Git head revision used for change detection. Default: HEAD
+  --force             Select every image instead of checking changes.
+  -h, --help          Show this help message.
+
+Examples:
+  ${0##*/} --outpt
 EOF
 }
 
