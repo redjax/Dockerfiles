@@ -1,0 +1,6 @@
+---
+name: renovate
+category: automation
+description: Renovate keeps your dependenies up to date.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/renovate

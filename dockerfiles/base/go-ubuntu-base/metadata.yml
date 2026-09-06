@@ -1,0 +1,6 @@
+---
+name: go-ubuntu-base
+category: base
+description: Container with Go and supporting tools like GoReleaser.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/go-ubuntu-base

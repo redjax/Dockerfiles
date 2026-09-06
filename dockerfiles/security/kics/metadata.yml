@@ -1,0 +1,6 @@
+---
+name: kics
+category: security
+description: checkmarx/kics container image with pinned version.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/kics

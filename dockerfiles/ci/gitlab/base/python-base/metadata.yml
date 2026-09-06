@@ -1,0 +1,6 @@
+---
+name: gitlab-python-base
+category: ci
+description: GitLab CI base image for Python jobs.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/gitlab-python-base

@@ -1,0 +1,6 @@
+---
+name: gitlab-alpine-core
+category: ci
+description: Minimal Alpine core image for GitLab CI jobs.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/gitlab-alpine-core

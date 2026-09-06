@@ -1,0 +1,6 @@
+---
+name: alpine-base
+category: base
+description: Minimal Alpine base image with initial tooling installed.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/alpine-base

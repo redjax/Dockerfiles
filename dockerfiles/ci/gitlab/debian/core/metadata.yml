@@ -1,0 +1,6 @@
+---
+name: gitlab-debian-core
+category: ci
+description: Minimal Debian core image for GitLab CI jobs.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/gitlab-debian-core

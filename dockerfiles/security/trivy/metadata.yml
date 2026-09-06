@@ -1,0 +1,6 @@
+---
+name: trivy
+category: security
+description: Trivy container image with pinned version.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/trivy

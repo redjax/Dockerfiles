@@ -1,0 +1,6 @@
+---
+name: debian-base
+category: base
+description: Minimal Debian base image with initial tooling installed.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/debian-base

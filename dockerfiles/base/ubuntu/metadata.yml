@@ -1,0 +1,6 @@
+---
+name: ubuntu-base
+category: base
+description: Minimal Ubuntu base image with initial tooling installed.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/ubuntu-base

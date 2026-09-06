@@ -1,0 +1,6 @@
+---
+name: gitlab-docker-base
+category: ci
+description: GitLab CI base image with Docker CLI and core shell tooling.
+dockerfile: dockerfiles/ci/gitlab/base/docker-base/Dockerfile
+registry_path: ghcr.io/redjax/dockerfiles/gitlab-docker-base

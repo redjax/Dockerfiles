@@ -1,0 +1,6 @@
+---
+name: forgejo-renovate
+category: automation
+description: Forgejo Actions image with Renovate CLI preinstalled.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/forgejo-renovate
