@@ -5,8 +5,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "dockerfiles/**"
 
   merge_group:
     types:
@@ -90,18 +88,11 @@ jobs:
     name: Determine images
     runs-on: ubuntu-latest
 
-    ## Do not run build validation for draft PRs.
-    #  The workflow still appears in the PR, but the job is skipped.
-    if: >
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.draft == false
-
     outputs:
       empty: ${{ steps.buildlist.outputs.empty }}
-      dry_run: ${{ steps.meta.outputs.dry_run }}
       enable_publish: ${{ steps.meta.outputs.enable_publish }}
       pull: ${{ steps.meta.outputs.pull }}
-      image: ${{ steps.meta.outputs.image }}
+      dry_run: ${{ steps.meta.outputs.dry_run }}
 
     steps:
       - name: Check out repository
@@ -114,42 +105,28 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          INPUT_IMAGE: ${{ inputs.image }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
           INPUT_ENABLE_PUBLISH: ${{ inputs.enable_publish }}
           INPUT_PULL: ${{ inputs.pull }}
         run: |
           set -euo pipefail
 
-          image="${INPUT_IMAGE:-}"
           dry_run="${INPUT_DRY_RUN:-false}"
           pull="${INPUT_PULL:-true}"
           enable_publish="${INPUT_ENABLE_PUBLISH:-false}"
 
-          ## Pull base images for normal repository builds.
-          #  Manual dispatch and workflow_call use their explicit input.
           if [[ "$EVENT_NAME" == "push" ]]; then
             pull="true"
-          fi
-
-          ## Only pushes to main publish by default.
-          #  Pull requests and merge groups must never publish.
-          if [[ "$EVENT_NAME" == "push" ]]; then
             enable_publish="true"
-          elif [[ "$EVENT_NAME" == "pull_request" ]]; then
-            enable_publish="false"
-          elif [[ "$EVENT_NAME" == "merge_group" ]]; then
+          elif [[ "$EVENT_NAME" == "pull_request" || "$EVENT_NAME" == "merge_group" ]]; then
             enable_publish="false"
           fi
 
-          echo "Resolved build configuration:"
-          echo "  event:           $EVENT_NAME"
-          echo "  image:           ${image:-<changed images>}"
-          echo "  dry run:         $dry_run"
-          echo "  publish:         $enable_publish"
-          echo "  pull:            $pull"
+          echo "event=$EVENT_NAME"
+          echo "dry_run=$dry_run"
+          echo "publish=$enable_publish"
+          echo "pull=$pull"
 
-          echo "image=$image" >> "$GITHUB_OUTPUT"
           echo "dry_run=$dry_run" >> "$GITHUB_OUTPUT"
           echo "enable_publish=$enable_publish" >> "$GITHUB_OUTPUT"
           echo "pull=$pull" >> "$GITHUB_OUTPUT"
@@ -170,27 +147,17 @@ jobs:
 
           : > build_list.txt
 
-          ## A manually selected image bypasses Git change detection.
-          #  The build script will still validate Dockerfile and metadata.yml.
           if [[ -n "$INPUT_IMAGE" ]]; then
             echo "$INPUT_IMAGE" > build_list.txt
 
           elif [[ "$EVENT_NAME" == "pull_request" ]]; then
-            echo "Determining images changed by pull request."
-
             ./scripts/build/determine-images-to-build.sh \
               --base "$PR_BASE_SHA" \
               --head "$PR_HEAD_SHA" \
               --output build_list.txt
 
           elif [[ "$EVENT_NAME" == "merge_group" ]]; then
-            echo "Determining images changed by merge group."
-
-            ## merge_group does not provide a reliably recognized expression
-            #  for base_sha in workflow YAML. Compare the synthetic merge-group
-            #  commit against the current main branch instead.
             git fetch origin main --no-tags
-
             base_sha="$(git rev-parse origin/main)"
 
             ./scripts/build/determine-images-to-build.sh \
@@ -199,10 +166,6 @@ jobs:
               --output build_list.txt
 
           elif [[ "$EVENT_NAME" == "push" ]]; then
-            echo "Determining images changed by push to main."
-
-            ## The first push to a repository has an all-zero before SHA.
-            #  In that case, build every discovered image.
             if [[ "$BEFORE_SHA" =~ ^0+$ ]]; then
               ./scripts/build/determine-images-to-build.sh \
                 --force \
@@ -214,22 +177,15 @@ jobs:
                 --output build_list.txt
             fi
 
-          else
-            ## workflow_dispatch and workflow_call.
-            #  With no image and no force option, there is nothing to build.
-            if [[ "${INPUT_FORCE:-false}" == "true" ]]; then
-              echo "Force mode enabled."
-
-              ./scripts/build/determine-images-to-build.sh \
-                --force \
-                --output build_list.txt
-            else
-              echo "No image or force option supplied."
-            fi
+          elif [[ "${INPUT_FORCE:-false}" == "true" ]]; then
+            ./scripts/build/determine-images-to-build.sh \
+              --force \
+              --output build_list.txt
           fi
 
           echo
           echo "Final build list:"
+
           if [[ -s build_list.txt ]]; then
             cat build_list.txt
             echo "empty=false" >> "$GITHUB_OUTPUT"
@@ -251,8 +207,7 @@ jobs:
     needs: plan
     runs-on: ubuntu-latest
 
-    if: >
-      needs.plan.outputs.empty == 'false'
+    if: needs.plan.outputs.empty == 'false'
 
     permissions:
       contents: read
@@ -276,59 +231,13 @@ jobs:
         if: >
           needs.plan.outputs.enable_publish == 'true' &&
           needs.plan.outputs.dry_run != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "${GITHUB_TOKEN}" | docker login ghcr.io \
-            --username "${GITHUB_ACTOR}" \
-            --password-stdin
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-
-      - name: Verify GHCR authentication
-        if: >
-          needs.plan.outputs.enable_publish == 'true' &&
-          needs.plan.outputs.dry_run != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "GHCR login completed."
-          docker system info --format \
-            'ServerVersion={{.ServerVersion}}'
-
-      - name: Verify publish configuration
-        if: >
-          needs.plan.outputs.enable_publish == 'true' &&
-          needs.plan.outputs.dry_run != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "event=${{ github.event_name }}"
-          echo "repository=${GITHUB_REPOSITORY}"
-          echo "actor=${GITHUB_ACTOR}"
-          echo "publish=${PUBLISH}"
-          echo "registry=ghcr.io"
-
-          docker info
-        env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          PUBLISH: ${{ needs.plan.outputs.enable_publish }}
-
-      - name: Display build list
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "Images selected for this run:"
-          cat build_list.txt
+        uses: docker/login-action@4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and publish images
-        shell: bash
         env:
           PUBLISH: ${{ needs.plan.outputs.enable_publish }}
           PULL: ${{ needs.plan.outputs.pull }}
@@ -356,3 +265,41 @@ jobs:
           ./scripts/build/build-and-publish-images.sh \
             "${args[@]}" \
             build_list.txt
+
+  Renovate_gate:
+    name: Renovate gate
+    needs:
+      - plan
+      - build
+    if: always()
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Validate workflow result
+        shell: bash
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: |
+          set -euo pipefail
+
+          echo "Plan result:  $PLAN_RESULT"
+          echo "Build result: $BUILD_RESULT"
+
+          if [[ "$PLAN_RESULT" != "success" ]]; then
+            echo "::error::Image planning failed."
+            exit 1
+          fi
+
+          case "$BUILD_RESULT" in
+            success|skipped)
+              echo "Validation passed."
+              ;;
+            *)
+              echo "::error::Docker image build failed or was cancelled."
+              exit 1
+              ;;
+          esac
