@@ -44,11 +44,6 @@ permissions:
 
 jobs:
   trim:
-    ## Run only after successful build workflow completion
-    if: |
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
-
     runs-on: ubuntu-latest
 
     steps:
@@ -64,11 +59,10 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLY: ${{ github.event_name == 'schedule' && 'true' || inputs.apply || 'false' }}
+          KEEP_VERSIONS: ${{ inputs.keep || 5 }}
         run: |
           set -euo pipefail
-
-          APPLY="${{ inputs.apply || false }}"
-          KEEP_VERSIONS="${{ inputs.keep || 5 }}"
 
           echo "Running trim-images with apply=$APPLY, keep=$KEEP_VERSIONS"
 
