@@ -17,7 +17,7 @@
         "**/go.mod",
         "**/Cargo.toml"
     ],
-    "platformAutomerge": false,
+    "platformAutomerge": true,
     "packageRules": [
         {
             "description": "Automerge Docker image updates",
@@ -27,6 +27,7 @@
             "versioning": "docker",
             "automerge": true,
             "automergeType": "pr",
+            "platformAutomerge": true,
             "automergeStrategy": "auto"
         },
         {
@@ -36,6 +37,7 @@
             ],
             "automerge": true,
             "automergeType": "pr",
+            "platformAutomerge": true,
             "automergeStrategy": "auto"
         },
         {
@@ -45,6 +47,7 @@
             ],
             "automerge": true,
             "automergeType": "pr",
+            "platformAutomerge": true,
             "automergeStrategy": "auto"
         }
     ],
