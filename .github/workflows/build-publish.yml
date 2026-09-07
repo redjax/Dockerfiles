@@ -266,7 +266,7 @@ jobs:
             "${args[@]}" \
             build_list.txt
 
-  Renovate_gate:
+  renovate-gate:
     name: Renovate gate
     needs:
       - plan
