@@ -1,0 +1,111 @@
+---
+version: "3"
+
+vars:
+  RENOVATE_IMG_TAG: '{{.RENOVATE_IMG_TAG | default "latest"}}'
+  RENOVATE_LOG_LEVEL: '{{.RENOVATE_LOG_LEVEL | default "info"}}'
+
+tasks:
+  local:
+    desc: "Run a local Renovate lookup dry-run."
+    cmds:
+      - |
+        set -euo pipefail
+
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+        echo "==> Running local Renovate dry-run"
+        echo "    Repository: $REPO_ROOT"
+        echo "    Renovate image: renovate/renovate:{{.RENOVATE_IMG_TAG}}"
+        echo "    Log level: {{.RENOVATE_LOG_LEVEL}}"
+        echo
+
+        docker run --rm \
+          -e RENOVATE_GITHUB_COM_TOKEN \
+          -e LOG_LEVEL="{{.RENOVATE_LOG_LEVEL}}" \
+          -v "$REPO_ROOT:/repo" \
+          -w /repo \
+          renovate/renovate:{{.RENOVATE_IMG_TAG}} \
+          --platform=local \
+          --dry-run=lookup \
+          --config-validation-error=true
+
+  extract:
+    desc: "Extract dependencies using Renovate without performing lookups."
+    cmds:
+      - |
+        set -euo pipefail
+
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+        echo "==> Extracting dependencies using Renovate"
+        echo "    Repository: $REPO_ROOT"
+        echo "    Renovate image: renovate/renovate:{{.RENOVATE_IMG_TAG}}"
+        echo "    Log level: {{.RENOVATE_LOG_LEVEL}}"
+        echo
+
+        docker run --rm \
+          -e RENOVATE_GITHUB_COM_TOKEN \
+          -e LOG_LEVEL="{{.RENOVATE_LOG_LEVEL}}" \
+          -v "$REPO_ROOT:/repo" \
+          -w /repo \
+          renovate/renovate:{{.RENOVATE_IMG_TAG}} \
+          --platform=local \
+          --dry-run=extract
+
+  validate:
+    desc: "Validate the local Renovate configuration."
+    cmds:
+      - |
+        set -euo pipefail
+
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+        echo "==> Validating Renovate configuration"
+        echo "    Repository: $REPO_ROOT"
+        echo "    Renovate image: renovate/renovate:{{.RENOVATE_IMG_TAG}}"
+        echo "    Log level: {{.RENOVATE_LOG_LEVEL}}"
+        echo
+
+        docker run --rm \
+          -e LOG_LEVEL="{{.RENOVATE_LOG_LEVEL}}" \
+          -v "$REPO_ROOT:/repo" \
+          -w /repo \
+          renovate/renovate:{{.RENOVATE_IMG_TAG}} \
+          --platform=local \
+          --dry-run=extract \
+          --config-validation-error=true
+
+  lookup:
+    desc: "Preview Renovate update candidates from the local checkout. Use ' | less' to see results in a pager."
+    cmds:
+      - |
+        set -euo pipefail
+
+        REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+        echo "==> Previewing Renovate update candidates"
+        echo "    Repository: $REPO_ROOT"
+        echo "    Renovate image: renovate/renovate:{{.RENOVATE_IMG_TAG}}"
+        echo "    Log level: debug"
+        echo
+
+        docker run --rm \
+          -e RENOVATE_GITHUB_COM_TOKEN \
+          -e LOG_LEVEL=debug \
+          -v "$REPO_ROOT:/repo" \
+          -w /repo \
+          renovate/renovate:{{.RENOVATE_IMG_TAG}} \
+          --platform=local \
+          --dry-run=lookup \
+          2>&1
+
+  preview:
+    desc: "Alias for the Renovate lookup task."
+    cmds:
+      - task: lookup
+
+  dry-run:
+    desc: "Alias for the Renovate lookup task."
+    cmds:
+      - task: lookup

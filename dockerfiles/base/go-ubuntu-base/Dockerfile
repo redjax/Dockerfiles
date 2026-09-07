@@ -7,7 +7,7 @@
 ARG UBUNTU_VERSION=26.10
 
 ## https://go.dev/dl/
-# renovate: datasource=github-releases depName=golang/go extractVersion=^go(?<version>.*)$
+# renovate: datasource=golang-version depName=golang
 ARG GOLANG_VERSION=1.26.4
 ## https://github.com/goreleaser/goreleaser/releases
 # renovate: datasource=github-releases depName=goreleaser/goreleaser extractVersion=^v(?<version>.*)$
@@ -16,8 +16,8 @@ ARG GORELEASER_VERSION=2.16.0
 # renovate: datasource=github-releases depName=golangci/golangci-lint extractVersion=^v(?<version>.*)$
 ARG GOLANGCI_LINT_VERSION=2.13.1
 ## https://pkg.go.dev/golang.org/x/tools/cmd/goimports
-# renovate: datasource=github-tags depName=golang/tools versioning=semver
-ARG GOIMPORTS_VERSION=v0.49.0
+# renovate: datasource=github-tags depName=golang/tools versioning=semver extractVersion=^v(?<version>.*)$
+ARG GOIMPORTS_VERSION=0.49.0
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
@@ -75,8 +75,12 @@ ARG GOIMPORTS_VERSION
 ARG GOLANGCI_LINT_VERSION
 
 ## Install goimports (formatting & import management)
-RUN go install golang.org/x/tools/cmd/goimports@${GOIMPORTS_VERSION} && \
-    install -m 0755 /root/go/bin/goimports /usr/local/bin/goimports
+RUN go install \
+      "golang.org/x/tools/cmd/goimports@v${GOIMPORTS_VERSION}" \
+    && install \
+      -m 0755 \
+      /root/go/bin/goimports \
+      /usr/local/bin/goimports
 
 ## Install golangci-lint
 RUN set -eux; \

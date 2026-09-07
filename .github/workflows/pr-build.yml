@@ -1,0 +1,72 @@
+---
+name: PR Build changed Dockerfiles
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "dockerfiles/**"
+
+  merge_group:
+    types:
+      - checks_requested
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build changed images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Determine changed images
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            base_sha="$PR_BASE_SHA"
+            head_sha="$PR_HEAD_SHA"
+          else
+            git fetch origin main --no-tags
+            base_sha="$(git rev-parse origin/main)"
+            head_sha="$GITHUB_SHA"
+          fi
+
+          ./scripts/build/determine-images-to-build.sh \
+            --base "$base_sha" \
+            --head "$head_sha" \
+            --output build_list.txt
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Dockerfile images
+        run: |
+          set -euo pipefail
+
+          if [[ ! -s build_list.txt ]]; then
+            echo "No changed images."
+            exit 0
+          fi
+
+          while IFS= read -r image_dir; do
+            [[ -n "$image_dir" ]] || continue
+
+            ./scripts/build/build-image.sh \
+              --image-dir "$image_dir" \
+              --tag "pr-${{ github.event.pull_request.number || github.run_id }}" \
+              --pull
+          done < build_list.txt

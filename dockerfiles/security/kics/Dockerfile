@@ -1,6 +1,6 @@
 ## https://github.com/Checkmarx/kics/releases
-# renovate: datasource=github-releases depName=Checkmarx/kics extractVersion=^v?(?<version>.*)$
-ARG KICS_TAG=2.1.21
+# renovate: datasource=docker depName=checkmarx/kics extractVersion=^v?(?<version>.*)$
+ARG KICS_TAG=2.1.20
 ## https://hub.docker.com/_/alpine
 # renovate: datasource=docker depName=alpine versioning=semver
 ARG ALPINE_TAG=3.24.1
@@ -10,22 +10,29 @@ ARG IMAGE_VERSION=dev
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE="local-build"
 
+FROM checkmarx/kics:v${KICS_TAG} AS kics
 FROM alpine:${ALPINE_TAG}
 
 ARG IMAGE_VERSION
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE
 
-RUN apk add --no-cache bash ca-certificates curl tar coreutils unzip
+RUN apk add --no-cache \
+  bash \
+  ca-certificates \
+  curl \
+  tar \
+  coreutils \
+  unzip
 
-## Import KICS_TAG from the outer stage and expose KICS_VERSION
-ARG KICS_TAG
-ENV KICS_VERSION="${KICS_TAG}"
+## Copy KICS and its runtime assets from the official image
+COPY --from=kics /app/bin/kics /usr/local/bin/kics
+COPY --from=kics /app/bin/assets /usr/local/share/kics/assets
 
-COPY install-kics.sh /tmp/install-kics.sh
-RUN chmod +x /tmp/install-kics.sh \
-  && /tmp/install-kics.sh \
-  && rm -f /tmp/install-kics.sh
+## KICS uses its bundled query and supporting asset directories.
+ENV KICS_QUERIES_PATH="/usr/local/share/kics/assets/queries"
+
+WORKDIR /work
 
 ## Metadata
 LABEL org.opencontainers.image.title="kics" \

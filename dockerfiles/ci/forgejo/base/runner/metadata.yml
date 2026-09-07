@@ -1,0 +1,6 @@
+---
+name: forgejo-runner-base
+category: ci
+description: Generic Forgejo Actions base image, with common tooling like cURL, SSH, npm, & more.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/forgejo-runner-base

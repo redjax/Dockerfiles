@@ -1,0 +1,6 @@
+---
+name: forgejo-go-base
+category: ci
+description: Forgejo Actions base image for Go workflows with Go and GoReleaser pre-installed.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/forgejo-go-base

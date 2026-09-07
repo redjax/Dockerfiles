@@ -2,9 +2,14 @@
 # Opinionated GitLab CI image for Astro site pipelines. #
 #########################################################
 
-## https://hub.docker.com/layers/library/docker/latest/
-# datasource=docker depName=docker versioning=semver
+# renovate: datasource=docker depName=docker versioning=semver
 ARG DOCKER_IMG_VER=29.5.0
+
+# renovate: datasource=pypi depName=bump-my-version
+ARG BUMP_MY_VERSION=1.5.1
+
+# renovate: datasource=npm depName=astro versioning=semver
+ARG ASTRO_VERSION=7.3.1
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
@@ -15,6 +20,8 @@ FROM docker:${DOCKER_IMG_VER}-cli
 
 ## Import args from outer layer
 ARG DOCKER_IMG_VER
+ARG BUMP_MY_VERSION
+ARG ASTRO_VERSION
 ARG IMAGE_VERSION
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE
@@ -32,8 +39,13 @@ RUN apk add --no-cache \
 
 ENV PATH="/root/.local/bin:$PATH"
 
+## Install bump-my-version
 RUN pipx ensurepath \
-    && pipx install bump-my-version
+    && pipx install "bump-my-version==${BUMP_MY_VERSION}"
+
+## Install Astro CLI
+RUN npm install --global "astro@${ASTRO_VERSION}" \
+    && npm cache clean --force
 
 WORKDIR /work
 
@@ -45,5 +57,9 @@ LABEL org.opencontainers.image.title="gitlab-astro" \
       org.opencontainers.image.source="${IMAGE_SOURCE}" \
       org.opencontainers.image.documentation="https://github.com/redjax/Dockerfiles/blob/main/dockerfiles/ci/gitlab/presets/astro/README.md" \
       org.opencontainers.image.description="Opinionated GitLab CI image for Astro pipelines with Docker, Node, and Python tooling."
+
+## Verify installed tools
+RUN bump-my-version --version \
+    && astro --version
 
 CMD ["/bin/sh"]

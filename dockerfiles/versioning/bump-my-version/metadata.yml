@@ -1,0 +1,6 @@
+---
+name: bump-my-version
+category: tooling
+description: Lightweight versioning image with bump-my-version, git, and curl.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/bump-my-version

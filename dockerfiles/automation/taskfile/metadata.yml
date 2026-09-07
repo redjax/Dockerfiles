@@ -1,0 +1,6 @@
+---
+name: taskfile
+category: tooling
+description: Taskfile is a cross-platform, Make-inspired build tool.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/taskfile

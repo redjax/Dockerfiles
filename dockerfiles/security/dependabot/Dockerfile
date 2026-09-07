@@ -1,8 +1,6 @@
-## https://hub.docker.com/_/alpine
 # renovate: datasource=docker depName=alpine versioning=semver
 ARG ALPINE_TAG=3.24.1
 
-## https://github.com/dependabot/cli/releases
 # renovate: datasource=github-releases depName=dependabot/cli extractVersion=^v?(?<version>.*)$
 ARG DEPENDABOT_VERSION=1.92.0
 
@@ -11,7 +9,7 @@ ARG IMAGE_VERSION=dev
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE="local-build"
 
-FROM alpine:3.24
+FROM alpine:${ALPINE_TAG}
 
 ## Import args from outer layer
 ARG DEPENDABOT_VERSION
@@ -33,10 +31,14 @@ RUN apk add --no-cache \
 
 ARG DEPENDABOT_VERSION
 
-RUN curl -fsSL \
-      "https://github.com/dependabot/cli/releases/download/${DEPENDABOT_VERSION}/dependabot-${DEPENDABOT_VERSION}-linux-amd64.tar.gz" \
-      -o /tmp/dependabot.tar.gz \
-    && tar -xzf /tmp/dependabot.tar.gz -C /usr/local/bin dependabot \
+RUN curl --fail --show-error --location \
+      "https://github.com/dependabot/cli/releases/download/v${DEPENDABOT_VERSION}/dependabot-v${DEPENDABOT_VERSION}-linux-amd64.tar.gz" \
+      --output /tmp/dependabot.tar.gz \
+    && tar --extract \
+      --gzip \
+      --file /tmp/dependabot.tar.gz \
+      --directory /usr/local/bin \
+      dependabot \
     && rm -f /tmp/dependabot.tar.gz \
     && chmod +x /usr/local/bin/dependabot
 

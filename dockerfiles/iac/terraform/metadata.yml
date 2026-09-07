@@ -1,0 +1,6 @@
+---
+name: terraform-tools
+category: tooling
+description: Terraform CLI image with tflint and tfsec installed.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/terraform-tools

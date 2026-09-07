@@ -1,86 +1,87 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-####################################################
-# Build and publish containers that have changed.  #
-#                                                  #
-# Default behavior: build locally, compare the     #
-# built image digest to the remote tag digest, and #
-# only publish if different.                       #
-#                                                  #
-# Use --force to always publish.                   #
-# Use --pull to always pull before build.          #
-####################################################
+############################################################
+# Build and publish changed container images.              #
+#                                                          #
+# The input file contains one image directory per line:    #
+#                                                          #
+#   dockerfiles/base/alpine                                #
+#   dockerfiles/iac/terraform                              #
+#                                                          #
+# Each image directory must contain:                       #
+#                                                          #
+#   Dockerfile                                             #
+#   metadata.yml                                           #
+#                                                          #
+# metadata.yml contains only static image metadata.         #
+# Dependency versions remain in Dockerfile ARG values and  #
+# are updated by Renovate.                                 #
+#                                                          #
+# Images receive the following tags:                       #
+#                                                          #
+#   :latest                                                #
+#   :<short-git-sha>                                       #
+#                                                          #
+# Publishing is disabled by default.                       #
+############################################################
 
 build_list_file="build_list.txt"
 dry_run="${DRY_RUN:-false}"
-force="${FORCE:-false}"
 enable_publishing="${PUBLISH:-false}"
 pull_images="${PULL:-false}"
 
 function usage() {
-  cat <<EOF
+  cat <<'EOF'
 Usage:
-  $0 [OPTIONS] [BUILD_LIST_FILE]
+  ${0##*/} [OPTIONS] [BUILD_LIST_FILE]
 
 Description:
-
-  Builds and publishes container images listed in a build list file.
-
-  Each entry in the build list should be a directory containing an image.yml
-  manifest. The script builds the image, compares its digest with the remote
-  registry, and only pushes if the image has changed (unless --force is used).
+  Builds and optionally publishes images listed in a build list file.
 
 Arguments:
-  BUILD_LIST_FILE   File containing image directories to process (default: build_list.txt)
+  BUILD_LIST_FILE
+      File containing one image directory per line.
+      Default: build_list.txt.
 
 Options:
-  --dry-run         Print build/publish steps without executing them
-  --force           Always publish images, skipping digest comparison
-  -f, --file PATH   Path to build list file (same as positional arg)
-  --file=PATH       Same as above
-  --publish         Enable publishing to the container registry (default: false)
-  --pull            Always pull images before starting build (default: false)
-  -h, --help        Show this help message
-
-Behavior:
-
-- Skips entries without image.yml or with 'publish: false'
-- Builds images using ./scripts/build/build-image.sh
-- Tags images as:
-  - <registry_path>:
-  - <registry_path>:latest
-  - <registry_path>:
-- Compares local vs remote digests before pushing (unless --force)
+  --dry-run           Print build and publish commands without executing them.
+  -f, --file     PATH Path to the build list file.
+  --file=PATH         Same as --file PATH.
+  -P, --publish       Enable publishing to the container registry.
+  --pull              Always pull base images before building.
+  -h, --help          Show this help message.
 
 Environment:
-  DRY_RUN=true           Equivalent to --dry-run
-  FORCE=true             Equivalent to --force
-  PUBLISH=true           Equivalent to --publish
-  GITHUB_SHA             Used for short SHA tagging (falls back to git)
-  PULL=true              Equivalent to --pull
+  DRY_RUN=true
+      Equivalent to --dry-run.
+
+  PUBLISH=true
+      Enable publishing.
+
+  PULL=true
+      Always pull base images.
+
+  GITHUB_SHA
+      Used to generate the immutable image tag.
+
+  IMAGE_SOURCE
+      OCI source label override.
 
 Requirements:
-  - docker
-  - docker buildx
-  - yq
-  - jq
-  - git
+  docker
+  yq
+  git
+
+Examples:
+  ${0##*/} --dry-run -f build_list.txt --pull
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-  -h | --help)
-    usage
-    exit 0
-    ;;
   --dry-run)
     dry_run="true"
-    shift
-    ;;
-  --force)
-    force="true"
     shift
     ;;
   -f | --file)
@@ -99,8 +100,13 @@ while [[ $# -gt 0 ]]; do
     pull_images="true"
     shift
     ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
   -*)
     echo "[ERROR] Unknown option: $1" >&2
+    usage >&2
     exit 1
     ;;
   *)
@@ -110,158 +116,149 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-## Get shorthash from pipeline/env var, or from git rev-parse
-short_sha="${GITHUB_SHA:-$(git rev-parse --short HEAD 2>/dev/null || echo local)}"
+## Use the GitHub Actions SHA when available.
+#  Fall back to the local Git revision for local execution.
+short_sha="${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || echo local)}"
 short_sha="${short_sha:0:7}"
 
-## Check for build manifest file
 [[ -f "$build_list_file" ]] || {
   echo "[ERROR] Missing build list: $build_list_file" >&2
   exit 1
 }
 
-## Ensure file is not empty
-if [[ ! -s "$build_list_file" ]]; then
+[[ -s "$build_list_file" ]] || {
   echo "No containers to build."
   exit 0
-fi
-
-function get_remote_digest() {
-  local ref="$1"
-  docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}' 2>/dev/null || true
 }
 
-function get_local_digest() {
-  local image_ref="$1"
-  docker image inspect "$image_ref" --format '{{index .RepoDigests 0}}' 2>/dev/null | awk -F@ '{print $2}' || true
+function require_metadata_value() {
+  local metadata_file="$1"
+  local key="$2"
+  local value
+
+  value="$(yq -r ".${key} // \"\"" "$metadata_file")"
+
+  [[ -n "$value" ]] || {
+    echo "[ERROR] Missing .${key} in $metadata_file" >&2
+    exit 1
+  }
+
+  printf '%s\n' "$value"
 }
 
-echo "Processing ${build_list_file} for container images to build"
-echo "dry run: $dry_run, publish to container registry: $enable_publishing, pull base images: $pull_images"
+echo "Processing build list: $build_list_file"
+echo "Dry run:              $dry_run"
+echo "Publish:              $enable_publishing"
+echo "Pull base images:     $pull_images"
+echo "Git tag:              $short_sha"
 
 while IFS= read -r image_dir; do
+  ## Ignore blank lines in the build list.
   [[ -n "$image_dir" ]] || continue
 
-  manifest="$image_dir/image.yml"
-  [[ -f "$manifest" ]] || continue
+  metadata_file="$image_dir/metadata.yml"
+  dockerfile="$image_dir/Dockerfile"
 
-  publish="$(yq e '.publish // false' "$manifest")"
-  [[ "$publish" == "true" ]] || continue
+  [[ -f "$metadata_file" ]] || {
+    echo "[ERROR] Missing metadata file: $metadata_file" >&2
+    exit 1
+  }
 
-  ## Populate vars from image.yml
-  context="$(yq e '.context' "$manifest")"
-  dockerfile="$(yq e '.dockerfile' "$manifest")"
-  name="$(yq e '.name' "$manifest")"
-  description="$(yq e '.description' "$manifest")"
-  registry_path="$(yq e '.registry_path' "$manifest")"
-  tag="$(yq e '.upstream.version' "$manifest")"
+  [[ -f "$dockerfile" ]] || {
+    echo "[ERROR] Missing Dockerfile: $dockerfile" >&2
+    exit 1
+  }
 
-  ## Read build args from image.yml
-  declare -A build_args_map
-  build_args=()
+  ## Read static image metadata.
+  image_name="$(require_metadata_value "$metadata_file" "name")"
+  description="$(require_metadata_value "$metadata_file" "description")"
+  registry_path="$(require_metadata_value "$metadata_file" "registry_path")"
+  publish_image="$(yq -r '.publish // false' "$metadata_file")"
 
-  ## Base args
-  while IFS= read -r key; do
-    [[ -n "$key" ]] || continue
-    value="$(yq e ".args.${key}" "$manifest")"
-    [[ -n "$value" && "$value" != "null" ]] || continue
-    build_args_map["$key"]="$value"
-  done < <(yq e '.args | keys | .[]' "$manifest" 2>/dev/null || true)
+  ## Do not publish images marked as publish: false.
+  if [[ "$publish_image" != "true" ]]; then
+    echo "[INFO] Skipping unpublished image: $image_dir"
+    continue
+  fi
 
-  ## version_args override
-  while IFS= read -r key; do
-    [[ -n "$key" ]] || continue
-    value="$(yq e ".version_args.${key}" "$manifest")"
-    [[ -n "$value" && "$value" != "null" ]] || continue
-    build_args_map["$key"]="$value"
-  done < <(yq e '.version_args | keys | .[]' "$manifest" 2>/dev/null || true)
+  local_tag="${image_name}:local-${short_sha}"
+  latest_ref="${registry_path}:latest"
+  sha_ref="${registry_path}:${short_sha}"
 
-  ## Convert map to CLI args
-  for key in "${!build_args_map[@]}"; do
-    build_args+=(--build-arg "${key}=${build_args_map[$key]}")
-  done
+  ## Build arguments provide common OCI image metadata.
+  #  Dependency versions are resolved from Dockerfile ARG defaults.
+  build_args=(
+    --build-arg "IMAGE_VERSION=${short_sha}"
+    --build-arg "IMAGE_CREATED=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    --build-arg "IMAGE_SOURCE=${IMAGE_SOURCE:-https://github.com/${GITHUB_REPOSITORY:-redjax/Dockerfiles}}"
+  )
 
-  # Build optional arguments for build-image.sh.
-  build_options=()
+  pull_args=()
 
   if [[ "$pull_images" == "true" ]]; then
-    build_options+=(--pull)
+    pull_args+=(--pull)
   fi
 
-  echo ""
-  echo "[+] Building $name from $manifest"
+  echo
+  echo "[+] Processing image: $image_name"
+  echo "    Directory:         $image_dir"
+  echo "    Dockerfile:        $dockerfile"
+  echo "    Registry path:     $registry_path"
 
   if [[ "$dry_run" == "true" ]]; then
-    echo "[DRY RUN] ./scripts/build/build-image.sh --context $context --dockerfile $dockerfile --name $name --description $description --tag $tag ${build_options[*]} ${build_args[*]}"
-    echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${tag}"
-    echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:latest"
-    echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${short_sha}"
-
-    if [[ "${enable_publishing}" = "true" ]]; then
-      echo "[DRY RUN] docker push ${registry_path}:${tag}"
-      echo "[DRY RUN] docker push ${registry_path}:latest"
-      echo "[DRY RUN] docker push ${registry_path}:${short_sha}"
-    fi
-
-    continue
-  fi
-
-  remote_digest=""
-  if [[ "$force" != "true" ]]; then
-    remote_digest="$(get_remote_digest "${registry_path}:${tag}")"
-    if [[ -n "$remote_digest" ]]; then
-      echo "Remote digest for ${registry_path}:${tag}: $remote_digest"
-    else
-      echo "Remote digest for ${registry_path}:${tag}: "
-    fi
-  fi
-
-  if [[ "$dry_run" == "true" ]]; then
-    echo "[DRY RUN] build-image.sh --context $context --dockerfile $dockerfile --name $name --tag $tag ${build_options[*]}"
-  else
-    ./scripts/build/build-image.sh \
-      --context "$context" \
-      --dockerfile "$dockerfile" \
-      --name "$name" \
-      --tag "$tag" \
-      --description "$description" \
-      "${build_options[@]}" \
-      "${build_args[@]}"
-  fi
-
-  local_digest="$(get_local_digest "${name}:${tag}")"
-  if [[ -n "$local_digest" ]]; then
-    echo "Local digest for ${name}:${tag}: $local_digest"
-  else
-    echo "Local digest for ${name}:${tag}: "
-  fi
-
-  if [[ "$force" != "true" && -n "$remote_digest" && -n "$local_digest" && "$remote_digest" == "$local_digest" ]]; then
-    echo "Skipping publish for ${name}:${tag}; image is unchanged."
-    continue
-  fi
-
-  if [[ "$dry_run" == "true" ]]; then
-    echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${tag}"
-    echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:latest"
-    echo "[DRY RUN] docker tag ${name}:${tag} ${registry_path}:${short_sha}"
+    echo "[DRY RUN] docker build \\"
+    echo "  --file $dockerfile \\"
+    echo "  --tag $local_tag \\"
+    echo "  --label description=$description \\"
+    printf '  %q ' "${pull_args[@]}" "${build_args[@]}"
+    echo
+    echo "  $image_dir"
 
     if [[ "$enable_publishing" == "true" ]]; then
-      echo "[DRY RUN] docker push ${registry_path}:${tag}"
-      echo "[DRY RUN] docker push ${registry_path}:latest"
-      echo "[DRY RUN] docker push ${registry_path}:${short_sha}"
+      echo "[DRY RUN] docker tag $local_tag $latest_ref"
+      echo "[DRY RUN] docker tag $local_tag $sha_ref"
+      echo "[DRY RUN] docker push $latest_ref"
+      echo "[DRY RUN] docker push $sha_ref"
     fi
 
-  else
-    docker tag "${name}:${tag}" "${registry_path}:${tag}"
-    docker tag "${name}:${tag}" "${registry_path}:latest"
-    docker tag "${name}:${tag}" "${registry_path}:${short_sha}"
-
-    if [[ "${enable_publishing}" == "true" ]]; then
-      docker push "${registry_path}:${tag}"
-      docker push "${registry_path}:latest"
-      docker push "${registry_path}:${short_sha}"
-    fi
+    continue
   fi
+
+  ## Build the image using the image directory as its context.
+  # docker build \
+  #   --file "$dockerfile" \
+  #   --tag "$local_tag" \
+  #   --label "description=${description}" \
+  #   "${pull_args[@]}" \
+  #   "${build_args[@]}" \
+  #   "$image_dir"
+
+  # ## Do not tag or push when publishing is disabled.
+  # if [[ "$enable_publishing" != "true" ]]; then
+  #   echo "[INFO] Publishing disabled for $image_name"
+  #   echo "[INFO] Local image: $local_tag"
+  #   continue
+  # fi
+
+  # ## Apply the mutable latest tag and immutable Git SHA tag.
+  # docker tag "$local_tag" "$latest_ref"
+  # docker tag "$local_tag" "$sha_ref"
+
+  # ## Publish both tags to GHCR.
+  # docker push "$latest_ref"
+  # docker push "$sha_ref"
+
+  docker buildx build \
+    --file "$dockerfile" \
+    --tag "$latest_ref" \
+    --tag "$sha_ref" \
+    --cache-from "type=gha,scope=${image_name}" \
+    --cache-to "type=gha,mode=max,scope=${image_name}" \
+    --push \
+    "$image_dir"
+
+  echo "[INFO] Published:"
+  echo "       $latest_ref"
+  echo "       $sha_ref"
 
 done <"$build_list_file"

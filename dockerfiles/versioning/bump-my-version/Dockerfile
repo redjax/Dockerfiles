@@ -1,6 +1,8 @@
-## https://hub.docker.com/_/alpine
 # renovate: datasource=docker depName=alpine versioning=semver
 ARG ALPINE_TAG=3.24.1
+
+# renovate: datasource=pypi depName=bump-my-version
+ARG BUMP_MY_VERSION=1.5.1
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
@@ -11,6 +13,7 @@ FROM alpine:${ALPINE_TAG}
 
 ## Import args from outer layer
 ARG ALPINE_TAG
+ARG BUMP_MY_VERSION
 ARG IMAGE_VERSION
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE
@@ -27,7 +30,7 @@ ENV PATH="/root/.local/bin:$PATH"
 
 ## Pre-install bump-my-version
 RUN pipx ensurepath \
-    && pipx install bump-my-version
+    && pipx install "bump-my-version==${BUMP_MY_VERSION}"
 
 WORKDIR /work
 
