@@ -6,11 +6,9 @@
 name: Trim old container images
 
 on:
-  workflow_run:
-    workflows:
-      - Build and publish images
-    types:
-      - completed
+  schedule:
+    ## Every day at 00:00 UTC
+    - cron: "0 0 * * *"
 
   workflow_dispatch:
     inputs:
