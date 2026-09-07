@@ -20,16 +20,20 @@
     "platformAutomerge": true,
     "packageRules": [
         {
-            "description": "GitHub workflow updates only",
+            "description": "GitHub workflow updates",
             "matchManagers": [
                 "github-actions"
             ],
             "matchFileNames": [
                 ".github/workflows/**"
-            ]
+            ],
+            "automerge": true,
+            "automergeType": "pr",
+            "platformAutomerge": true,
+            "automergeStrategy": "auto"
         },
         {
-            "description": "Docker image tag updates",
+            "description": "Docker image versions",
             "matchDatasources": [
                 "docker"
             ],
@@ -46,9 +50,17 @@
             "automergeStrategy": "auto"
         },
         {
-            "description": "Automerge GitHub Actions updates",
+            "description": "Automerge Dockerfile dependency updates",
             "matchManagers": [
-                "github-actions"
+                "custom.regex"
+            ],
+            "matchDatasources": [
+                "github-releases",
+                "github-tags",
+                "pypi",
+                "npm",
+                "golang-version",
+                "docker"
             ],
             "automerge": true,
             "automergeType": "pr",
