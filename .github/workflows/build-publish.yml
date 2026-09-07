@@ -231,7 +231,7 @@ jobs:
         if: >
           needs.plan.outputs.enable_publish == 'true' &&
           needs.plan.outputs.dry_run != 'true'
-        uses: docker/login-action@4.6.0
+        uses: docker/login-action@v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
