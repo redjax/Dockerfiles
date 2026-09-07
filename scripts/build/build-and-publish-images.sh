@@ -14,7 +14,7 @@ set -euo pipefail
 #   Dockerfile                                             #
 #   metadata.yml                                           #
 #                                                          #
-# metadata.yml contains only static image metadata.         #
+# metadata.yml contains only static image metadata.        #
 # Dependency versions remain in Dockerfile ARG values and  #
 # are updated by Renovate.                                 #
 #                                                          #
@@ -32,7 +32,7 @@ enable_publishing="${PUBLISH:-false}"
 pull_images="${PULL:-false}"
 
 function usage() {
-  cat <<'EOF'
+  cat <<EOF
 Usage:
   ${0##*/} [OPTIONS] [BUILD_LIST_FILE]
 
@@ -46,7 +46,7 @@ Arguments:
 
 Options:
   --dry-run           Print build and publish commands without executing them.
-  -f, --file     PATH Path to the build list file.
+  -f, --file PATH     Path to the build list file.
   --file=PATH         Same as --file PATH.
   -P, --publish       Enable publishing to the container registry.
   --pull              Always pull base images before building.
@@ -199,6 +199,16 @@ while IFS= read -r image_dir; do
     pull_args+=(--pull)
   fi
 
+  ## Configure GitHub Actions cache when running in CI.
+  cache_args=()
+
+  if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    cache_args=(
+      --cache-from "type=gha,scope=${image_name}"
+      --cache-to "type=gha,mode=max,scope=${image_name}"
+    )
+  fi
+
   echo
   echo "[+] Processing image: $image_name"
   echo "    Directory:         $image_dir"
@@ -206,59 +216,70 @@ while IFS= read -r image_dir; do
   echo "    Registry path:     $registry_path"
 
   if [[ "$dry_run" == "true" ]]; then
-    echo "[DRY RUN] docker build \\"
-    echo "  --file $dockerfile \\"
-    echo "  --tag $local_tag \\"
-    echo "  --label description=$description \\"
-    printf '  %q ' "${pull_args[@]}" "${build_args[@]}"
-    echo
-    echo "  $image_dir"
-
     if [[ "$enable_publishing" == "true" ]]; then
-      echo "[DRY RUN] docker tag $local_tag $latest_ref"
-      echo "[DRY RUN] docker tag $local_tag $sha_ref"
-      echo "[DRY RUN] docker push $latest_ref"
-      echo "[DRY RUN] docker push $sha_ref"
+      echo "[DRY RUN] docker buildx build \\"
+      echo "  --file $dockerfile \\"
+      echo "  --tag $latest_ref \\"
+      echo "  --tag $sha_ref \\"
+      echo "  --label description=$description \\"
+      printf '  %q ' "${pull_args[@]}"
+      printf '%q ' "${build_args[@]}"
+      printf '%q ' "${cache_args[@]}"
+      echo "--push \\"
+      echo "  $image_dir"
+    else
+      echo "[DRY RUN] docker buildx build \\"
+      echo "  --file $dockerfile \\"
+      echo "  --tag $local_tag \\"
+      echo "  --label description=$description \\"
+      printf '  %q ' "${pull_args[@]}"
+      printf '%q ' "${build_args[@]}"
+      printf '%q ' "${cache_args[@]}"
+      echo "--load \\"
+      echo "  $image_dir"
     fi
 
     continue
   fi
 
-  ## Build the image using the image directory as its context.
-  # docker build \
-  #   --file "$dockerfile" \
-  #   --tag "$local_tag" \
-  #   --label "description=${description}" \
-  #   "${pull_args[@]}" \
-  #   "${build_args[@]}" \
-  #   "$image_dir"
+  ## Build and publish when publishing is enabled.
+  if [[ "$enable_publishing" == "true" ]]; then
+    echo "[INFO] Building and publishing $image_name"
 
-  # ## Do not tag or push when publishing is disabled.
-  # if [[ "$enable_publishing" != "true" ]]; then
-  #   echo "[INFO] Publishing disabled for $image_name"
-  #   echo "[INFO] Local image: $local_tag"
-  #   continue
-  # fi
+    docker buildx build \
+      --file "$dockerfile" \
+      --tag "$latest_ref" \
+      --tag "$sha_ref" \
+      --label "description=${description}" \
+      "${pull_args[@]}" \
+      "${build_args[@]}" \
+      "${cache_args[@]}" \
+      --push \
+      "$image_dir"
 
-  # ## Apply the mutable latest tag and immutable Git SHA tag.
-  # docker tag "$local_tag" "$latest_ref"
-  # docker tag "$local_tag" "$sha_ref"
+    echo "[INFO] Published:"
+    echo "       $latest_ref"
+    echo "       $sha_ref"
 
-  # ## Publish both tags to GHCR.
-  # docker push "$latest_ref"
-  # docker push "$sha_ref"
+    continue
+  fi
+
+  ## Build without publishing when publishing is disabled.
+  #  --load imports the image into the local Docker image store.
+  #  This is useful for pull-request validation and local testing.
+  echo "[INFO] Building $image_name without publishing"
 
   docker buildx build \
     --file "$dockerfile" \
-    --tag "$latest_ref" \
-    --tag "$sha_ref" \
-    --cache-from "type=gha,scope=${image_name}" \
-    --cache-to "type=gha,mode=max,scope=${image_name}" \
-    --push \
+    --tag "$local_tag" \
+    --label "description=${description}" \
+    "${pull_args[@]}" \
+    "${build_args[@]}" \
+    "${cache_args[@]}" \
+    --load \
     "$image_dir"
 
-  echo "[INFO] Published:"
-  echo "       $latest_ref"
-  echo "       $sha_ref"
+  echo "[INFO] Publishing disabled for $image_name"
+  echo "[INFO] Local image: $local_tag"
 
 done <"$build_list_file"
