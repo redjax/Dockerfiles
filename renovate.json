@@ -17,36 +17,16 @@
         "**/go.mod",
         "**/Cargo.toml"
     ],
-    "platformAutomerge": true,
+    "platformAutomerge": false,
     "packageRules": [
-        {
-            "description": "GitHub workflow updates",
-            "matchManagers": [
-                "github-actions"
-            ],
-            "matchFileNames": [
-                ".github/workflows/**"
-            ],
-            "automerge": true,
-            "automergeType": "pr",
-            "platformAutomerge": true,
-            "automergeStrategy": "auto"
-        },
-        {
-            "description": "Docker image versions",
-            "matchDatasources": [
-                "docker"
-            ],
-            "versioning": "docker"
-        },
         {
             "description": "Automerge Docker image updates",
             "matchDatasources": [
                 "docker"
             ],
+            "versioning": "docker",
             "automerge": true,
             "automergeType": "pr",
-            "platformAutomerge": true,
             "automergeStrategy": "auto"
         },
         {
@@ -54,17 +34,17 @@
             "matchManagers": [
                 "custom.regex"
             ],
-            "matchDatasources": [
-                "github-releases",
-                "github-tags",
-                "pypi",
-                "npm",
-                "golang-version",
-                "docker"
+            "automerge": true,
+            "automergeType": "pr",
+            "automergeStrategy": "auto"
+        },
+        {
+            "description": "Automerge GitHub Actions updates",
+            "matchManagers": [
+                "github-actions"
             ],
             "automerge": true,
             "automergeType": "pr",
-            "platformAutomerge": true,
             "automergeStrategy": "auto"
         }
     ],

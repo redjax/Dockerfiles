@@ -7,8 +7,6 @@ on:
       - main
     paths:
       - "dockerfiles/**"
-      - "scripts/build/**"
-      - ".github/workflows/build-images-pr.yml"
 
   merge_group:
     types:
@@ -16,7 +14,6 @@ on:
 
 permissions:
   contents: read
-  packages: read
 
 jobs:
   build:
@@ -24,11 +21,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Check out pull request
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-          fetch-tags: false
 
       - name: Determine changed images
         env:
@@ -48,9 +45,6 @@ jobs:
             head_sha="$GITHUB_SHA"
           fi
 
-          echo "Base revision: $base_sha"
-          echo "Head revision: $head_sha"
-
           ./scripts/build/determine-images-to-build.sh \
             --base "$base_sha" \
             --head "$head_sha" \
@@ -59,10 +53,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build changed images
+      - name: Build Dockerfile images
         run: |
+          set -euo pipefail
+
           if [[ ! -s build_list.txt ]]; then
-            echo "No image directories changed."
+            echo "No changed images."
             exit 0
           fi
 
