@@ -1,0 +1,252 @@
+---
+##################################################
+# Run security scanners against this repository. #
+##################################################
+
+name: Security scans
+
+on:
+  ## Temporary push trigger while testing
+  push:
+    branches:
+      - feat/security-scans-pipeline
+
+  workflow_dispatch:
+    inputs:
+      enableTrivy:
+        description: Run Trivy
+        required: false
+        type: boolean
+        default: false
+
+      enableGitleaks:
+        description: Run Gitleaks against Git history
+        required: false
+        type: boolean
+        default: false
+
+      enableOSV:
+        description: Run OSV-Scanner against repository dependencies
+        required: false
+        type: boolean
+        default: false
+
+      enableCodeQL:
+        description: Run CodeQL analysis
+        required: false
+        type: boolean
+        default: false
+
+      enableTruffleHog:
+        description: Run TruffleHog against Git history
+        required: false
+        type: boolean
+        default: false
+
+      trivyScanType:
+        description: Trivy scan target
+        required: false
+        type: choice
+        options:
+          - filesystem
+          - image
+        default: filesystem
+
+      trivyScanPath:
+        description: Repository-relative path to scan with Trivy filesystem mode
+        required: false
+        type: string
+        default: .
+
+      trivyImageRef:
+        description: Image reference to scan with Trivy image mode
+        required: false
+        type: string
+        default: ""
+
+      trivySeverity:
+        description: Trivy severity levels to report
+        required: false
+        type: string
+        default: HIGH,CRITICAL
+
+      trivyIgnoreUnfixed:
+        description: Ignore Trivy vulnerabilities without a fix
+        required: false
+        type: boolean
+        default: true
+
+      failOnTrivyFindings:
+        description: Fail if Trivy reports findings
+        required: false
+        type: boolean
+        default: true
+
+      failOnGitleaksFindings:
+        description: Fail if Gitleaks reports findings
+        required: false
+        type: boolean
+        default: true
+
+      failOnOSVFindings:
+        description: Fail if OSV-Scanner reports vulnerabilities
+        required: false
+        type: boolean
+        default: true
+
+      failOnTruffleHogFindings:
+        description: Fail if TruffleHog reports findings
+        required: false
+        type: boolean
+        default: true
+
+      osvRecursive:
+        description: Recursively scan for dependency manifests and lockfiles
+        required: false
+        type: boolean
+        default: true
+
+      osvNoResolve:
+        description: Disable OSV transitive dependency resolution
+        required: false
+        type: boolean
+        default: false
+
+      codeqlLanguages:
+        description: Comma-separated CodeQL languages
+        required: false
+        type: string
+        default: ""
+
+      codeqlQueries:
+        description: CodeQL query suite or query additions
+        required: false
+        type: string
+        default: ""
+
+      codeqlRunBuild:
+        description: Run a traced CodeQL build
+        required: false
+        type: boolean
+        default: false
+
+      codeqlBuildCommands:
+        description: Newline-delimited CodeQL build commands
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  trivy:
+    name: Trivy scan
+    # if: inputs.enableTrivy
+    ## Temporary conditional while testing
+    if: github.event_name == 'push' || inputs.enableTrivy
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    uses: redjax/PipelineTemplates/.github/workflows/trivy-scan.yml@main
+    with:
+      scan-type: ${{ inputs.trivyScanType }}
+      scan-path: ${{ inputs.trivyScanPath }}
+      image-ref: ${{ inputs.trivyImageRef }}
+      severity: ${{ inputs.trivySeverity }}
+      ignore-unfixed: ${{ inputs.trivyIgnoreUnfixed }}
+      fail-on-findings: ${{ inputs.failOnTrivyFindings }}
+      config-path: .trivyignore.yaml
+      artifact-retention-days: 30
+      pipelinetemplates-ref: main
+
+  gitleaks:
+    name: Gitleaks scan
+    # if: inputs.enableGitleaks
+    ## Temporary conditional while testing
+    if: github.event_name == 'push' || inputs.enableGitleaks
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    uses: redjax/PipelineTemplates/.github/workflows/gitleaks-secret-scan.yml@main
+    with:
+      mode: git
+      source: .
+      config-path: .gitleaks.toml
+      baseline-path: ""
+      fail-on-findings: ${{ inputs.failOnGitleaksFindings }}
+      generate-csv-report: true
+      artifact-retention-days: 30
+
+  osv:
+    name: OSV dependency scan
+    # if: inputs.enableOSV
+    ## Temporary conditional while testing
+    if: github.event_name == 'push' || inputs.enableOSV
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    uses: redjax/PipelineTemplates/.github/workflows/osv-scan.yml@main
+    with:
+      source: .
+      recursive: ${{ inputs.osvRecursive }}
+      config-path: ""
+      no-resolve: ${{ inputs.osvNoResolve }}
+      allow-no-package-sources: true
+      verbosity: info
+      additional-args: ""
+      fail-on-vulnerabilities: ${{ inputs.failOnOSVFindings }}
+      sarif-category: dockerfiles-osv
+      artifact-retention-days: 30
+      pipeline-templates-ref: main
+
+  codeql:
+    name: CodeQL analysis
+    # if: inputs.enableCodeQL
+    ## Temporary conditional while testing
+    if: github.event_name == 'push' || inputs.enableCodeQL
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    uses: redjax/PipelineTemplates/.github/workflows/codeql-analysis.yml@main
+    with:
+      languages: ${{ inputs.codeqlLanguages }}
+      queries: ${{ inputs.codeqlQueries }}
+      run-build: ${{ inputs.codeqlRunBuild }}
+      build-commands: ${{ inputs.codeqlBuildCommands }}
+      upload-sarif: true
+      fail-on-error: true
+      category: dockerfiles-codeql
+
+  trufflehog:
+    name: TruffleHog scan
+    # if: inputs.enableTruffleHog
+    ## Temporary conditional while testing
+    if: github.event_name == 'push' || inputs.enableTrufflehog
+
+    permissions:
+      actions: read
+      contents: read
+
+    uses: redjax/PipelineTemplates/.github/workflows/trufflehog-secret-scan.yml@main
+    with:
+      mode: git
+      source: .
+      config-path: ""
+      results: verified
+      fail-on-findings: ${{ inputs.failOnTruffleHogFindings }}
+      artifact-retention-days: 30
