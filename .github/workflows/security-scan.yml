@@ -31,12 +31,6 @@ on:
         type: boolean
         default: false
 
-      enableCodeQL:
-        description: Run CodeQL analysis
-        required: false
-        type: boolean
-        default: false
-
       enableTruffleHog:
         description: Run TruffleHog against Git history
         required: false
@@ -112,30 +106,6 @@ on:
         type: boolean
         default: false
 
-      codeqlLanguages:
-        description: Comma-separated CodeQL languages
-        required: false
-        type: string
-        default: ""
-
-      codeqlQueries:
-        description: CodeQL query suite or query additions
-        required: false
-        type: string
-        default: ""
-
-      codeqlRunBuild:
-        description: Run a traced CodeQL build
-        required: false
-        type: boolean
-        default: false
-
-      codeqlBuildCommands:
-        description: Newline-delimited CodeQL build commands
-        required: false
-        type: string
-        default: ""
-
 permissions:
   actions: read
   contents: read
@@ -154,14 +124,26 @@ jobs:
       security-events: write
 
     uses: redjax/PipelineTemplates/.github/workflows/trivy-scan.yml@main
+    # with:
+    #   scan-type: ${{ inputs.trivyScanType }}
+    #   scan-path: ${{ inputs.trivyScanPath }}
+    #   image-ref: ${{ inputs.trivyImageRef }}
+    #   severity: ${{ inputs.trivySeverity }}
+    #   ignore-unfixed: ${{ inputs.trivyIgnoreUnfixed }}
+    #   fail-on-findings: ${{ inputs.failOnTrivyFindings }}
+    #   config-path: .trivyignore.yaml
+    #   artifact-retention-days: 30
+    #   pipelinetemplates-ref: main
+
+    ## Temporary testing params
     with:
-      scan-type: ${{ inputs.trivyScanType }}
-      scan-path: ${{ inputs.trivyScanPath }}
-      image-ref: ${{ inputs.trivyImageRef }}
-      severity: ${{ inputs.trivySeverity }}
-      ignore-unfixed: ${{ inputs.trivyIgnoreUnfixed }}
-      fail-on-findings: ${{ inputs.failOnTrivyFindings }}
-      config-path: .trivyignore.yaml
+      scan-type: "filesystem"
+      scan-path: "."
+      image-ref: ""
+      severity: "HIGH,CRITICAL"
+      ignore-unfixed: true
+      fail-on-findings: false
+      config-path: ""
       artifact-retention-days: 30
       pipelinetemplates-ref: main
 
@@ -177,12 +159,22 @@ jobs:
       security-events: write
 
     uses: redjax/PipelineTemplates/.github/workflows/gitleaks-secret-scan.yml@main
+    # with:
+    #   mode: git
+    #   source: .
+    #   config-path: .gitleaks.toml
+    #   baseline-path: ""
+    #   fail-on-findings: ${{ inputs.failOnGitleaksFindings }}
+    #   generate-csv-report: true
+    #   artifact-retention-days: 30
+
+    ## Temporary testing params
     with:
       mode: git
       source: .
       config-path: .gitleaks.toml
       baseline-path: ""
-      fail-on-findings: ${{ inputs.failOnGitleaksFindings }}
+      fail-on-findings: false
       generate-csv-report: true
       artifact-retention-days: 30
 
@@ -198,39 +190,32 @@ jobs:
       security-events: write
 
     uses: redjax/PipelineTemplates/.github/workflows/osv-scan.yml@main
+    # with:
+    #   source: .
+    #   recursive: ${{ inputs.osvRecursive }}
+    #   config-path: ""
+    #   no-resolve: ${{ inputs.osvNoResolve }}
+    #   allow-no-package-sources: true
+    #   verbosity: info
+    #   additional-args: ""
+    #   fail-on-vulnerabilities: ${{ inputs.failOnOSVFindings }}
+    #   sarif-category: dockerfiles-osv
+    #   artifact-retention-days: 30
+    #   pipeline-templates-ref: main
+
+    ## Temporary testing params
     with:
       source: .
-      recursive: ${{ inputs.osvRecursive }}
+      recursive: true
       config-path: ""
-      no-resolve: ${{ inputs.osvNoResolve }}
+      no-resolve: false
       allow-no-package-sources: true
       verbosity: info
       additional-args: ""
-      fail-on-vulnerabilities: ${{ inputs.failOnOSVFindings }}
+      fail-on-vulnerabilities: true
       sarif-category: dockerfiles-osv
       artifact-retention-days: 30
       pipeline-templates-ref: main
-
-  codeql:
-    name: CodeQL analysis
-    # if: inputs.enableCodeQL
-    ## Temporary conditional while testing
-    if: github.event_name == 'push' || inputs.enableCodeQL
-
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    uses: redjax/PipelineTemplates/.github/workflows/codeql-analysis.yml@main
-    with:
-      languages: ${{ inputs.codeqlLanguages }}
-      queries: ${{ inputs.codeqlQueries }}
-      run-build: ${{ inputs.codeqlRunBuild }}
-      build-commands: ${{ inputs.codeqlBuildCommands }}
-      upload-sarif: true
-      fail-on-error: true
-      category: dockerfiles-codeql
 
   trufflehog:
     name: TruffleHog scan
@@ -243,10 +228,19 @@ jobs:
       contents: read
 
     uses: redjax/PipelineTemplates/.github/workflows/trufflehog-secret-scan.yml@main
+    # with:
+    #   mode: git
+    #   source: .
+    #   config-path: ""
+    #   results: verified
+    #   fail-on-findings: ${{ inputs.failOnTruffleHogFindings }}
+    #   artifact-retention-days: 30
+
+    ## Temporary testing params
     with:
       mode: git
       source: .
       config-path: ""
       results: verified
-      fail-on-findings: ${{ inputs.failOnTruffleHogFindings }}
+      fail-on-findings: true
       artifact-retention-days: 30
