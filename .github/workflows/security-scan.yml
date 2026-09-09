@@ -110,5 +110,8 @@ jobs:
       failOnOSVFindings: ${{ github.event_name == 'schedule' || inputs.failOnOSVFindings }}
       failOnTruffleHogFindings: ${{ github.event_name == 'schedule' || inputs.failOnTruffleHogFindings }}
 
+      ## When OSV doesn't find any supported scan targets, treat it as a success/neutral exit
+      osvAllowNoPackageSources: true
+
       # pipelineTemplatesRef: main
       pipelineTemplatesRef: ${{ github.event_name == 'schedule' && 'feat/unified-security-scanners' || inputs.pipelineTemplatesRef }}
