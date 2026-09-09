@@ -14,7 +14,7 @@ ARG GOLANG_VERSION=1.27.1
 ARG GORELEASER_VERSION=2.18.1
 ## https://github.com/golangci/golangci-lint/releases
 # renovate: datasource=github-releases depName=golangci/golangci-lint extractVersion=^v(?<version>.*)$
-ARG GOLANGCI_LINT_VERSION=2.13.1
+ARG GOLANGCI_LINT_VERSION=2.13.2
 ## https://pkg.go.dev/golang.org/x/tools/cmd/goimports
 # renovate: datasource=github-tags depName=golang/tools versioning=semver extractVersion=^v(?<version>.*)$
 ARG GOIMPORTS_VERSION=0.50.0
