@@ -6,11 +6,6 @@
 name: Security scans
 
 on:
-  ## Temporary push trigger while testing
-  push:
-    branches:
-      - feat/security-scans-pipeline
-
   workflow_dispatch:
     inputs:
       enableTrivy:
@@ -114,135 +109,77 @@ permissions:
 jobs:
   trivy:
     name: Trivy scan
-    # if: inputs.enableTrivy
-    ## Temporary conditional while testing
-    if: github.event_name == 'push' || inputs.enableTrivy
-
+    if: inputs.enableTrivy
     permissions:
       actions: read
       contents: read
       security-events: write
 
-    uses: redjax/PipelineTemplates/.github/workflows/trivy-scan.yml@feat/security-scan-report-prints
-    # with:
-    #   scan-type: ${{ inputs.trivyScanType }}
-    #   scan-path: ${{ inputs.trivyScanPath }}
-    #   image-ref: ${{ inputs.trivyImageRef }}
-    #   severity: ${{ inputs.trivySeverity }}
-    #   ignore-unfixed: ${{ inputs.trivyIgnoreUnfixed }}
-    #   fail-on-findings: ${{ inputs.failOnTrivyFindings }}
-    #   config-path: ""
-    #   ignore-file: .trivyignore.yaml
-    #   artifact-retention-days: 30
-    #   pipelinetemplates-ref: main
-
-    ## Temporary testing params
+    uses: redjax/PipelineTemplates/.github/workflows/trivy-scan.yml@main
     with:
-      scan-type: filesystem
-      scan-path: .
-      image-ref: ""
-      severity: HIGH,CRITICAL
-      ignore-unfixed: true
-      fail-on-findings: false
+      scan-type: ${{ inputs.trivyScanType }}
+      scan-path: ${{ inputs.trivyScanPath }}
+      image-ref: ${{ inputs.trivyImageRef }}
+      severity: ${{ inputs.trivySeverity }}
+      ignore-unfixed: ${{ inputs.trivyIgnoreUnfixed }}
+      fail-on-findings: ${{ inputs.failOnTrivyFindings }}
       config-path: ""
       ignore-file: .trivyignore.yaml
       artifact-retention-days: 30
-      pipelinetemplates-ref: feat/security-scan-report-prints
+      pipelinetemplates-ref: main
 
   gitleaks:
     name: Gitleaks scan
-    # if: inputs.enableGitleaks
-    ## Temporary conditional while testing
-    if: github.event_name == 'push' || inputs.enableGitleaks
-
+    if: inputs.enableGitleaks
     permissions:
       actions: read
       contents: read
       security-events: write
 
-    uses: redjax/PipelineTemplates/.github/workflows/gitleaks-secret-scan.yml@feat/security-scan-report-prints
-    # with:
-    #   mode: git
-    #   source: .
-    #   config-path: .gitleaks.toml
-    #   baseline-path: ""
-    #   fail-on-findings: ${{ inputs.failOnGitleaksFindings }}
-    #   generate-csv-report: true
-    #   artifact-retention-days: 30
-
-    ## Temporary testing params
+    uses: redjax/PipelineTemplates/.github/workflows/gitleaks-secret-scan.yml@main
     with:
       mode: git
       source: .
       config-path: .gitleaks.toml
       baseline-path: ""
-      fail-on-findings: false
+      fail-on-findings: ${{ inputs.failOnGitleaksFindings }}
       generate-csv-report: true
       artifact-retention-days: 30
 
   osv:
     name: OSV dependency scan
-    # if: inputs.enableOSV
-    ## Temporary conditional while testing
-    if: github.event_name == 'push' || inputs.enableOSV
-
+    if: inputs.enableOSV
     permissions:
       actions: read
       contents: read
       security-events: write
 
-    uses: redjax/PipelineTemplates/.github/workflows/osv-scan.yml@feat/security-scan-report-prints
-    # with:
-    #   source: .
-    #   recursive: ${{ inputs.osvRecursive }}
-    #   config-path: ""
-    #   no-resolve: ${{ inputs.osvNoResolve }}
-    #   allow-no-package-sources: true
-    #   verbosity: info
-    #   additional-args: ""
-    #   fail-on-vulnerabilities: ${{ inputs.failOnOSVFindings }}
-    #   sarif-category: dockerfiles-osv
-    #   artifact-retention-days: 30
-    #   pipeline-templates-ref: main
-
-    ## Temporary testing params
+    uses: redjax/PipelineTemplates/.github/workflows/osv-scan.yml@main
     with:
       source: .
-      recursive: true
+      recursive: ${{ inputs.osvRecursive }}
       config-path: ""
-      no-resolve: false
+      no-resolve: ${{ inputs.osvNoResolve }}
       allow-no-package-sources: true
       verbosity: info
       additional-args: ""
-      fail-on-vulnerabilities: true
+      fail-on-vulnerabilities: ${{ inputs.failOnOSVFindings }}
       sarif-category: dockerfiles-osv
       artifact-retention-days: 30
-      pipeline-templates-ref: feat/security-scan-report-prints
+      pipeline-templates-ref: main
 
   trufflehog:
     name: TruffleHog scan
-    # if: inputs.enableTruffleHog
-    ## Temporary conditional while testing
-    if: github.event_name == 'push' || inputs.enableTruffleHog
-
+    if: inputs.enableTruffleHog
     permissions:
       actions: read
       contents: read
 
-    uses: redjax/PipelineTemplates/.github/workflows/trufflehog-secret-scan.yml@feat/security-scan-report-prints
-    # with:
-    #   mode: git
-    #   source: .
-    #   config-path: ""
-    #   results: verified
-    #   fail-on-findings: ${{ inputs.failOnTruffleHogFindings }}
-    #   artifact-retention-days: 30
-
-    ## Temporary testing params
+    uses: redjax/PipelineTemplates/.github/workflows/trufflehog-secret-scan.yml@main
     with:
       mode: git
       source: .
       config-path: ""
       results: verified
-      fail-on-findings: true
+      fail-on-findings: ${{ inputs.failOnTruffleHogFindings }}
       artifact-retention-days: 30
