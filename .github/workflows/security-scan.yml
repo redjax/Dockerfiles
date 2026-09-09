@@ -131,19 +131,21 @@ jobs:
     #   severity: ${{ inputs.trivySeverity }}
     #   ignore-unfixed: ${{ inputs.trivyIgnoreUnfixed }}
     #   fail-on-findings: ${{ inputs.failOnTrivyFindings }}
-    #   config-path: .trivyignore.yaml
+    #   config-path: ""
+    #   ignore-file: .trivyignore.yaml
     #   artifact-retention-days: 30
     #   pipelinetemplates-ref: main
 
     ## Temporary testing params
     with:
-      scan-type: "filesystem"
-      scan-path: "."
+      scan-type: filesystem
+      scan-path: .
       image-ref: ""
-      severity: "HIGH,CRITICAL"
+      severity: HIGH,CRITICAL
       ignore-unfixed: true
       fail-on-findings: false
       config-path: ""
+      ignore-file: .trivyignore.yaml
       artifact-retention-days: 30
       pipelinetemplates-ref: feat/security-scan-report-prints
 
@@ -221,7 +223,7 @@ jobs:
     name: TruffleHog scan
     # if: inputs.enableTruffleHog
     ## Temporary conditional while testing
-    if: github.event_name == 'push' || inputs.enableTrufflehog
+    if: github.event_name == 'push' || inputs.enableTruffleHog
 
     permissions:
       actions: read
