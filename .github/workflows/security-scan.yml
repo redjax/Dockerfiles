@@ -18,91 +18,64 @@ on:
         default: false
 
       enableGitleaks:
-        description: Run Gitleaks against Git history
+        description: Run Gitleaks
         required: false
         type: boolean
         default: false
 
       enableOSV:
-        description: Run OSV-Scanner against repository dependencies
+        description: Run OSV-Scanner
+        required: false
+        type: boolean
+        default: false
+
+      enableCodeQL:
+        description: Run CodeQL
         required: false
         type: boolean
         default: false
 
       enableTruffleHog:
-        description: Run TruffleHog against Git history
+        description: Run TruffleHog
         required: false
         type: boolean
         default: false
 
-      trivyScanType:
-        description: Trivy scan target
-        required: false
-        type: choice
-        options:
-          - filesystem
-          - image
-        default: filesystem
-
-      trivyScanPath:
-        description: Repository-relative path to scan with Trivy filesystem mode
+      trivyIgnoreFile:
+        description: Repository-local Trivy ignore file
         required: false
         type: string
-        default: .
-
-      trivyImageRef:
-        description: Image reference to scan with Trivy image mode
-        required: false
-        type: string
-        default: ""
-
-      trivySeverity:
-        description: Trivy severity levels to report
-        required: false
-        type: string
-        default: HIGH,CRITICAL
-
-      trivyIgnoreUnfixed:
-        description: Ignore Trivy vulnerabilities without a fix
-        required: false
-        type: boolean
-        default: true
+        default: .trivyignore.yaml
 
       failOnTrivyFindings:
-        description: Fail if Trivy reports findings
+        description: Fail when Trivy reports findings
         required: false
         type: boolean
         default: true
 
       failOnGitleaksFindings:
-        description: Fail if Gitleaks reports findings
+        description: Fail when Gitleaks reports findings
         required: false
         type: boolean
         default: true
 
       failOnOSVFindings:
-        description: Fail if OSV-Scanner reports vulnerabilities
+        description: Fail when OSV-Scanner reports vulnerabilities
         required: false
         type: boolean
         default: true
 
       failOnTruffleHogFindings:
-        description: Fail if TruffleHog reports findings
+        description: Fail when TruffleHog reports findings
         required: false
         type: boolean
         default: true
 
-      osvRecursive:
-        description: Recursively scan for dependency manifests and lockfiles
+      pipelineTemplatesRef:
+        description: Branch, tag, or SHA in PipelineTemplates repository to checkout
         required: false
-        type: boolean
-        default: true
-
-      osvNoResolve:
-        description: Disable OSV transitive dependency resolution
-        required: false
-        type: boolean
-        default: false
+        type: string
+        default: "main"
 
 permissions:
   actions: read
@@ -110,79 +83,35 @@ permissions:
   security-events: write
 
 jobs:
-  trivy:
-    name: Trivy scan
-    if: inputs.enableTrivy
+  security-scans:
+    name: Run security scans
+
     permissions:
       actions: read
       contents: read
       security-events: write
 
-    uses: redjax/PipelineTemplates/.github/workflows/trivy-scan.yml@3499e4297d357ee76f53da48bbb9d8d0dc52f5d1 # main
+    uses: redjax/PipelineTemplates/.github/workflows/security-scans.yml@main
     with:
-      scan-type: ${{ inputs.trivyScanType }}
-      scan-path: ${{ inputs.trivyScanPath }}
-      image-ref: ${{ inputs.trivyImageRef }}
-      severity: ${{ inputs.trivySeverity }}
-      ignore-unfixed: ${{ inputs.trivyIgnoreUnfixed }}
-      fail-on-findings: ${{ inputs.failOnTrivyFindings }}
-      config-path: ""
-      ignore-file: .trivyignore.yaml
-      artifact-retention-days: 30
-      pipelinetemplates-ref: main
+      ## Scheduled scans run Trivy, OSV-Scanner, and TruffleHog.
+      #  Manual runs use the workflow_dispatch boolean inputs.
+      enableTrivy: ${{ github.event_name == 'schedule' || inputs.enableTrivy }}
+      enableGitleaks: ${{ inputs.enableGitleaks }}
+      enableOSV: ${{ github.event_name == 'schedule' || inputs.enableOSV }}
+      enableCodeQL: ${{ inputs.enableCodeQL }}
+      enableTruffleHog: ${{ github.event_name == 'schedule' || inputs.enableTruffleHog }}
 
-  gitleaks:
-    name: Gitleaks scan
-    if: inputs.enableGitleaks
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+      ## Use the repository-local ignore file for both scheduled and manual runs.
+      trivyIgnoreFile: ${{ inputs.trivyIgnoreFile || '.trivyignore.yaml' }}
 
-    uses: redjax/PipelineTemplates/.github/workflows/gitleaks-secret-scan.yml@3499e4297d357ee76f53da48bbb9d8d0dc52f5d1 # main
-    with:
-      mode: git
-      source: .
-      config-path: .gitleaks.toml
-      baseline-path: ""
-      fail-on-findings: ${{ inputs.failOnGitleaksFindings }}
-      generate-csv-report: true
-      artifact-retention-days: 30
+      ## Scheduled scans enforce findings policies. Manual runs use their inputs.
+      failOnTrivyFindings: ${{ github.event_name == 'schedule' || inputs.failOnTrivyFindings }}
+      failOnGitleaksFindings: ${{ github.event_name == 'schedule' || inputs.failOnGitleaksFindings }}
+      failOnOSVFindings: ${{ github.event_name == 'schedule' || inputs.failOnOSVFindings }}
+      failOnTruffleHogFindings: ${{ github.event_name == 'schedule' || inputs.failOnTruffleHogFindings }}
 
-  osv:
-    name: OSV dependency scan
-    if: inputs.enableOSV
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+      ## When OSV doesn't find any supported scan targets, treat it as a success/neutral exit
+      osvAllowNoPackageSources: true
 
-    uses: redjax/PipelineTemplates/.github/workflows/osv-scan.yml@3499e4297d357ee76f53da48bbb9d8d0dc52f5d1 # main
-    with:
-      source: .
-      recursive: ${{ inputs.osvRecursive }}
-      config-path: ""
-      no-resolve: ${{ inputs.osvNoResolve }}
-      allow-no-package-sources: true
-      verbosity: info
-      additional-args: ""
-      fail-on-vulnerabilities: ${{ inputs.failOnOSVFindings }}
-      sarif-category: dockerfiles-osv
-      artifact-retention-days: 30
-      pipeline-templates-ref: main
-
-  trufflehog:
-    name: TruffleHog scan
-    if: inputs.enableTruffleHog
-    permissions:
-      actions: read
-      contents: read
-
-    uses: redjax/PipelineTemplates/.github/workflows/trufflehog-secret-scan.yml@3499e4297d357ee76f53da48bbb9d8d0dc52f5d1 # main
-    with:
-      mode: git
-      source: .
-      config-path: ""
-      results: verified
-      fail-on-findings: ${{ inputs.failOnTruffleHogFindings }}
-      artifact-retention-days: 30
+      # pipelineTemplatesRef: main
+      pipelineTemplatesRef: ${{ github.event_name == 'schedule' && 'main' || inputs.pipelineTemplatesRef }}
