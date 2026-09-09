@@ -91,7 +91,7 @@ jobs:
       contents: read
       security-events: write
 
-    uses: redjax/PipelineTemplates/.github/workflows/security-scans.yml@feat/unified-security-scanners
+    uses: redjax/PipelineTemplates/.github/workflows/security-scans.yml@main
     with:
       ## Scheduled scans run Trivy, OSV-Scanner, and TruffleHog.
       #  Manual runs use the workflow_dispatch boolean inputs.
@@ -114,4 +114,4 @@ jobs:
       osvAllowNoPackageSources: true
 
       # pipelineTemplatesRef: main
-      pipelineTemplatesRef: ${{ github.event_name == 'schedule' && 'feat/unified-security-scanners' || inputs.pipelineTemplatesRef }}
+      pipelineTemplatesRef: ${{ github.event_name == 'schedule' && 'main' || inputs.pipelineTemplatesRef }}
