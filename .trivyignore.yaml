@@ -1,0 +1,6 @@
+---
+misconfigurations:
+  - id: AVD-DS-0002
+    statement: >-
+      Images in this repository may intentionally inherit the root user from
+      upstream base images.
