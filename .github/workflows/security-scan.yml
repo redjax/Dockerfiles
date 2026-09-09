@@ -118,7 +118,7 @@ jobs:
       contents: read
       security-events: write
 
-    uses: redjax/PipelineTemplates/.github/workflows/trivy-scan.yml@main
+    uses: redjax/PipelineTemplates/.github/workflows/trivy-scan.yml@3499e4297d357ee76f53da48bbb9d8d0dc52f5d1 # main
     with:
       scan-type: ${{ inputs.trivyScanType }}
       scan-path: ${{ inputs.trivyScanPath }}
@@ -139,7 +139,7 @@ jobs:
       contents: read
       security-events: write
 
-    uses: redjax/PipelineTemplates/.github/workflows/gitleaks-secret-scan.yml@main
+    uses: redjax/PipelineTemplates/.github/workflows/gitleaks-secret-scan.yml@3499e4297d357ee76f53da48bbb9d8d0dc52f5d1 # main
     with:
       mode: git
       source: .
@@ -157,7 +157,7 @@ jobs:
       contents: read
       security-events: write
 
-    uses: redjax/PipelineTemplates/.github/workflows/osv-scan.yml@main
+    uses: redjax/PipelineTemplates/.github/workflows/osv-scan.yml@3499e4297d357ee76f53da48bbb9d8d0dc52f5d1 # main
     with:
       source: .
       recursive: ${{ inputs.osvRecursive }}
@@ -178,7 +178,7 @@ jobs:
       actions: read
       contents: read
 
-    uses: redjax/PipelineTemplates/.github/workflows/trufflehog-secret-scan.yml@main
+    uses: redjax/PipelineTemplates/.github/workflows/trufflehog-secret-scan.yml@3499e4297d357ee76f53da48bbb9d8d0dc52f5d1 # main
     with:
       mode: git
       source: .
