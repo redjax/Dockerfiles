@@ -1,5 +1,5 @@
 # renovate: datasource=npm depName=renovate versioning=node
-ARG RENOVATE_VERSION=44.95.0
+ARG RENOVATE_VERSION=44.97.2
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
