@@ -1,5 +1,5 @@
 # renovate: datasource=docker depName=alpine versioning=semver
-ARG ALPINE_TAG=3.24.1
+ARG ALPINE_TAG=3.24.2
 
 # renovate: datasource=pypi depName=bump-my-version
 ARG BUMP_MY_VERSION=1.5.1
