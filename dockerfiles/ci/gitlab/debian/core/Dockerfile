@@ -4,7 +4,7 @@
 
 ## https://hub.docker.com/_/debian
 # renovate: datasource=docker depName=debian versioning=semver
-ARG DEBIAN_TAG=13.6
+ARG DEBIAN_TAG=13.7
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
