@@ -3,7 +3,7 @@
 ARG RENOVATE_TAG=44.103.2-full
 ## https://hub.docker.com/_/debian
 # renovate: datasource=docker depName=debian versioning=docker
-ARG DEBIAN_TAG=13.6-slim
+ARG DEBIAN_TAG=13.7-slim
 
 FROM renovate/renovate:${RENOVATE_TAG} AS base
 
