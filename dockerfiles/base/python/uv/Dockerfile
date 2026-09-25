@@ -1,6 +1,6 @@
 ## https://docs.astral.sh/uv
 # renovate: datasource=docker depName=ghcr.io/astral-sh/uv versioning=semver
-ARG UV_BASE=0.12.18
+ARG UV_BASE=0.12.19
 
 ## Base OS version
 # renovate: datasource=docker depName=debian versioning=semver
