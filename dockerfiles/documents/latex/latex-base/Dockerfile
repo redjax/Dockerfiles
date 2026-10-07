@@ -4,7 +4,7 @@ ARG IMAGE_VERSION=dev
 ARG IMAGE_CREATED
 ARG IMAGE_SOURCE="local-build"
 
-FROM texlive/texlive:latest-small
+FROM texlive/texlive:latest-small@sha256:787564f7d055c2a66e3ca8d1bd5c617373dbc8b5d280f22d62b07b46bb3a5c41
 
 ARG IMAGE_VERSION
 ARG IMAGE_CREATED
