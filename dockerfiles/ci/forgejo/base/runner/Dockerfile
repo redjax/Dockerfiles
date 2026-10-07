@@ -110,8 +110,37 @@ RUN set -eux; \
 ENV PATH=/usr/local/go/bin:/home/runner/.npm-global/bin:$PATH
 ENV GOTOOLCHAIN=local
 
+## Secrets tools, i.e. SOPS & AGE
+FROM tool-go AS tool-secrets
+
+# renovate: datasource=github-releases depName=getsops/sops
+ARG SOPS_VERSION=3.11.0
+
+# renovate: datasource=github-releases depName=FiloSottile/age
+ARG AGE_VERSION=1.2.1
+
+ARG TARGETARCH
+
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+        amd64) ARCH="amd64" ;; \
+        arm64) ARCH="arm64" ;; \
+        *) echo "Unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL \
+        "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.${ARCH}" \
+        -o /usr/local/bin/sops; \
+    chmod +x /usr/local/bin/sops; \
+    curl -fsSL \
+        "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-${ARCH}.tar.gz" \
+        -o /tmp/age.tar.gz; \
+    tar -xzf /tmp/age.tar.gz -C /tmp; \
+    install -m 0755 /tmp/age/age /usr/local/bin/age; \
+    install -m 0755 /tmp/age/age-keygen /usr/local/bin/age-keygen; \
+    rm -rf /tmp/age /tmp/age.tar.gz
+
 ## Runtime layer
-FROM tool-go AS run
+FROM tool-secrets AS run
 
 RUN git config --system --add safe.directory '*'
 
