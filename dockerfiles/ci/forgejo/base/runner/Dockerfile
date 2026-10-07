@@ -114,7 +114,7 @@ ENV GOTOOLCHAIN=local
 FROM tool-go AS tool-secrets
 
 # renovate: datasource=github-releases depName=getsops/sops
-ARG SOPS_VERSION=3.11.0
+ARG SOPS_VERSION=3.13.3
 
 # renovate: datasource=github-releases depName=FiloSottile/age
 ARG AGE_VERSION=1.2.1
