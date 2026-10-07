@@ -49,6 +49,15 @@
             "automergeType": "pr",
             "platformAutomerge": true,
             "automergeStrategy": "auto"
+        },
+        {
+            "matchDatasources": [
+                "docker"
+            ],
+            "matchPackageNames": [
+                "texlive/texlive"
+            ],
+            "pinDigests": true
         }
     ],
     "customManagers": [
