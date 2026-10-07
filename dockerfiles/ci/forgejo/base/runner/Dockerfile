@@ -113,8 +113,12 @@ ENV GOTOOLCHAIN=local
 ## Secrets tools, i.e. SOPS & AGE
 FROM tool-go AS tool-secrets
 
+# renovate: datasource=github-releases depName=getsops/sops
 ARG SOPS_VERSION=3.11.0
+
+# renovate: datasource=github-releases depName=FiloSottile/age
 ARG AGE_VERSION=1.2.1
+
 ARG TARGETARCH
 
 RUN set -eux; \
