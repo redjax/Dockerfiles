@@ -1,0 +1,6 @@
+---
+name: latex-base
+category: documents
+description: Reusable TeX Live build environment with latexmk.
+publish: true
+registry_path: ghcr.io/redjax/dockerfiles/latex-base
