@@ -117,7 +117,7 @@ FROM tool-go AS tool-secrets
 ARG SOPS_VERSION=3.11.0
 
 # renovate: datasource=github-releases depName=FiloSottile/age
-ARG AGE_VERSION=1.2.1
+ARG AGE_VERSION=1.3.2
 
 ARG TARGETARCH
 
