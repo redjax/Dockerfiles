@@ -10,7 +10,7 @@
 ARG UBUNTU_VERSION=26.10
 
 # renovate: datasource=golang-version depName=go
-ARG GO_VERSION=1.27.1
+ARG GO_VERSION=1.27.2
 
 FROM ubuntu:${UBUNTU_VERSION} AS base
 
