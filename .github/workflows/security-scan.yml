@@ -95,20 +95,20 @@ jobs:
     with:
       ## Scheduled scans run Trivy, OSV-Scanner, and TruffleHog.
       #  Manual runs use the workflow_dispatch boolean inputs.
-      enableTrivy: ${{ github.event_name == 'schedule' || inputs.enableTrivy }}
-      enableGitleaks: ${{ inputs.enableGitleaks }}
-      enableOSV: ${{ github.event_name == 'schedule' || inputs.enableOSV }}
-      enableCodeQL: ${{ inputs.enableCodeQL }}
-      enableTruffleHog: ${{ github.event_name == 'schedule' || inputs.enableTruffleHog }}
+      enableTrivy: ${{ github.event_name == 'schedule' || inputs.enableTrivy == true }}
+      enableGitleaks: ${{ inputs.enableGitleaks == true }}
+      enableOSV: ${{ github.event_name == 'schedule' || inputs.enableOSV == true }}
+      enableCodeQL: ${{ inputs.enableCodeQL == true }}
+      enableTruffleHog: ${{ github.event_name == 'schedule' || inputs.enableTruffleHog == true }}
 
       ## Use the repository-local ignore file for both scheduled and manual runs.
       trivyIgnoreFile: ${{ inputs.trivyIgnoreFile || '.trivyignore.yaml' }}
 
       ## Scheduled scans enforce findings policies. Manual runs use their inputs.
-      failOnTrivyFindings: ${{ github.event_name == 'schedule' || inputs.failOnTrivyFindings }}
-      failOnGitleaksFindings: ${{ github.event_name == 'schedule' || inputs.failOnGitleaksFindings }}
-      failOnOSVFindings: ${{ github.event_name == 'schedule' || inputs.failOnOSVFindings }}
-      failOnTruffleHogFindings: ${{ github.event_name == 'schedule' || inputs.failOnTruffleHogFindings }}
+      failOnTrivyFindings: ${{ github.event_name == 'schedule' || inputs.failOnTrivyFindings == true }}
+      failOnGitleaksFindings: ${{ github.event_name == 'schedule' || inputs.failOnGitleaksFindings == true }}
+      failOnOSVFindings: ${{ github.event_name == 'schedule' || inputs.failOnOSVFindings == true }}
+      failOnTruffleHogFindings: ${{ github.event_name == 'schedule' || inputs.failOnTruffleHogFindings == true }}
 
       ## When OSV doesn't find any supported scan targets, treat it as a success/neutral exit
       osvAllowNoPackageSources: true
