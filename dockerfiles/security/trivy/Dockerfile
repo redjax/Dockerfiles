@@ -1,6 +1,6 @@
 ## https://hub.docker.com/r/aquasec/trivy
 # renovate: datasource=docker depName=aquasec/trivy versioning=semver
-ARG TRIVY_TAG=0.76.0
+ARG TRIVY_TAG=0.76.1
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
