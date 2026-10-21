@@ -3,7 +3,7 @@
 #########################################################
 
 # renovate: datasource=docker depName=docker versioning=semver
-ARG DOCKER_IMG_VER=29.9.1
+ARG DOCKER_IMG_VER=29.9.2
 
 # renovate: datasource=pypi depName=bump-my-version
 ARG BUMP_MY_VERSION=1.6.3
