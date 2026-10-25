@@ -2,7 +2,7 @@
 ARG ALPINE_TAG=3.24.3
 
 # renovate: datasource=pypi depName=bump-my-version
-ARG BUMP_MY_VERSION=1.6.5
+ARG BUMP_MY_VERSION=1.6.6
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
