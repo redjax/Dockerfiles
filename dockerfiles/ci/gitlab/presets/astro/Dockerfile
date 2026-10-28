@@ -9,7 +9,7 @@ ARG DOCKER_IMG_VER=29.9.2
 ARG BUMP_MY_VERSION=1.6.7
 
 # renovate: datasource=npm depName=astro versioning=semver
-ARG ASTRO_VERSION=7.4.2
+ARG ASTRO_VERSION=7.4.3
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
