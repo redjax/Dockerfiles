@@ -1,6 +1,6 @@
 ## https://hub.docker.com/r/trufflesecurity/trufflehog
 # renovate: datasource=docker depName=trufflesecurity/trufflehog versioning=semver
-ARG TRUFFLEHOG_TAG=3.99.7
+ARG TRUFFLEHOG_TAG=3.99.8
 
 ## Metadata defaults. Override in scripts/pipelines
 ARG IMAGE_VERSION=dev
