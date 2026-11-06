@@ -3,7 +3,7 @@
 ARG KICS_TAG=2.2.0
 ## https://hub.docker.com/_/alpine
 # renovate: datasource=docker depName=alpine versioning=semver
-ARG ALPINE_TAG=3.24.3
+ARG ALPINE_TAG=3.24.4
 
 ## Metadata defaults
 ARG IMAGE_VERSION=dev
