@@ -1,5 +1,5 @@
 # renovate: datasource=docker depName=alpine versioning=semver
-ARG ALPINE_TAG=3.24.3
+ARG ALPINE_TAG=3.24.4
 
 # renovate: datasource=github-releases depName=dependabot/cli extractVersion=^v?(?<version>.*)$
 ARG DEPENDABOT_VERSION=1.97.0
