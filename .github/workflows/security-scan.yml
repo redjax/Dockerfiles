@@ -91,7 +91,7 @@ jobs:
       contents: read
       security-events: write
 
-    uses: redjax/PipelineTemplates/.github/workflows/security-scans.yml@22c86bcef41d80443877ec3c2f5fac043cbff4a8 # main
+    uses: redjax/PipelineTemplates/.github/workflows/security-scans.yml@2bce38e33ac8cfbcd0b0309f1945e7f263fb2aac # main
     with:
       ## Scheduled scans run Trivy, OSV-Scanner, and TruffleHog.
       #  Manual runs use the workflow_dispatch boolean inputs.
