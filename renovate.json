@@ -5,6 +5,8 @@
         "helpers:pinGitHubActionDigests",
         ":dependencyDashboard"
     ],
+    "minimumReleaseAgeBehaviour": "timestamp-optional",
+    "internalChecksFilter": "strict",
     "enabledManagers": [
         "github-actions",
         "dockerfile",
@@ -25,6 +27,7 @@
                 "docker"
             ],
             "versioning": "docker",
+            "minimumReleaseAge": "7 days",
             "automerge": true,
             "automergeType": "pr",
             "platformAutomerge": true,
