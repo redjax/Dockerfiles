@@ -8,7 +8,7 @@ ARG UBUNTU_VERSION=26.10
 
 ## https://go.dev/dl/
 # renovate: datasource=golang-version depName=golang
-ARG GOLANG_VERSION=1.27.3
+ARG GOLANG_VERSION=1.27.4
 ## https://github.com/goreleaser/goreleaser/releases
 # renovate: datasource=github-releases depName=goreleaser/goreleaser extractVersion=^v(?<version>.*)$
 ARG GORELEASER_VERSION=2.20.0
