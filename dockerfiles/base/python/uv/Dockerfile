@@ -4,7 +4,7 @@ ARG UV_BASE=0.13.9
 
 ## Base OS version
 # renovate: datasource=docker depName=debian versioning=semver
-ARG DEBIAN_TAG=13.7
+ARG DEBIAN_TAG=13.8
 
 ## Metadata defaults
 ARG IMAGE_VERSION=dev
