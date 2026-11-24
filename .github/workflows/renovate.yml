@@ -40,7 +40,7 @@ permissions:
 
 jobs:
   renovate:
-    uses: redjax/pipelinetemplates/.github/workflows/renovate.yml@5c8ed99f68189fa58e556cb21116b98443309c81 # main
+    uses: redjax/pipelinetemplates/.github/workflows/renovate.yml@06c31d5ede1430ac17f2ac30fb2849b18dd9f422 # main
     with:
       mode: >-
         ${{ github.event_name == 'schedule'
